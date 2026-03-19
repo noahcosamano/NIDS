@@ -1,24 +1,26 @@
 import pyshark
-from queue import Queue
+import asyncio
 from packet import Packet
-import time
 
-packet_queue = Queue()
 packet_list = []
 
-import asyncio
-import pyshark
-
-def capture(interface: str):
-    print("capturing packets")
-
+def capture(interface, output_queue, stop_event):
+    print("Capture Starting")
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    capture = pyshark.LiveCapture(interface=interface)
+    cap = pyshark.LiveCapture(interface=interface)
 
-    for pkt in capture.sniff_continuously():
-        packet_queue.put(pkt)
+    try:
+        for pkt in cap.sniff_continuously():
+            if stop_event.is_set():
+                break
+
+            output_queue.put(pkt)
+
+    finally:
+        cap.close()
+        loop.close()
         
 def parse_packet(packet) -> Packet:
     dst_mac = src_mac = None
@@ -75,13 +77,18 @@ def parse_packet(packet) -> Packet:
         flags
     )
     
-    print(pkt)
-    
     return pkt
 
-def build_packet_list() -> list[Packet]:
-    while True:
-        packet = packet_queue.get()
+def build_packet_list(input_queue, output_queue, stop_event):
+    while not stop_event.is_set():
+        raw_packet = input_queue.get()
 
-        parsed = parse_packet(packet)
-        packet_list.append(parsed)
+        try:
+            pkt = parse_packet(raw_packet)
+            output_queue.put(pkt)
+        except Exception as e:
+            print(e)
+
+        input_queue.task_done()
+        
+        
