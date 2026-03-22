@@ -1,26 +1,19 @@
 import threading
 import queue
 import time
-from capture_packets import capture, build_packet_list
+from capture import capture
 from detect_scan import detect_scan
 
 loopback = r'\Device\NPF_Loopback'
 wifi = "Wi-Fi"
 
 def main():
-    raw_packet_queue = queue.Queue()
     fast_scan_packet_queue = queue.Queue()
     slow_scan_packet_queue = queue.Queue()
 
     capture_thread = threading.Thread(
         target=capture,
-        args=(wifi, raw_packet_queue),
-        daemon=False
-    )
-
-    parse_thread = threading.Thread(
-        target=build_packet_list,
-        args=(raw_packet_queue, [fast_scan_packet_queue, slow_scan_packet_queue]),
+        args=(wifi, [fast_scan_packet_queue, slow_scan_packet_queue]),
         daemon=False
     )
 
@@ -37,7 +30,6 @@ def main():
     )
 
     capture_thread.start()
-    parse_thread.start()
     fast_scan_thread.start()
     slow_scan_thread.start()
     
@@ -50,7 +42,6 @@ def main():
     print("Program terminating...")
     
     capture_thread.join()
-    parse_thread.join()
     fast_scan_thread.join()
     slow_scan_thread.join()
 
