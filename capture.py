@@ -3,12 +3,8 @@ from scapy.layers.inet import IP, TCP, UDP, ICMP
 from scapy.layers.l2 import Ether
 from packet import Packet
 from queue import Queue
-
-protocol_nums = {
-    1: "ICMP",
-    6: "TCP",
-    17: "UDP",
-}
+from time import time
+from proto_nums import protocol_nums
 
 def handle(raw_pkt, packet_queues: list[Queue[Packet]]):
     if IP not in raw_pkt:
@@ -21,9 +17,10 @@ def handle(raw_pkt, packet_queues: list[Queue[Packet]]):
     # IP
     src_ip = raw_pkt[IP].src
     dst_ip = raw_pkt[IP].dst
-    protocol = protocol_nums.get(raw_pkt[IP].proto, "OTHER")
+    protocol = protocol_nums.get(raw_pkt[IP].proto, "DEFAULT")
 
     # Defaults
+    type = None
     src_port = None
     dst_port = None
     flags = None
@@ -39,15 +36,13 @@ def handle(raw_pkt, packet_queues: list[Queue[Packet]]):
         dst_port = raw_pkt[UDP].dport
 
     elif ICMP in raw_pkt:
-        pass  # no ports
+        type = get_type(raw_pkt)
 
     pkt = Packet(
         dst_mac, src_mac, protocol,
-        src_ip, dst_ip,
-        src_port, dst_port, flags
+        type, src_ip, dst_ip, src_port, 
+        dst_port, flags, time()
     )
-    
-    print(pkt)
 
     for queue in packet_queues:
         queue.put(pkt)
@@ -65,6 +60,12 @@ def get_flags(raw_pkt):
         if flags & 0x20: names.append("URG")
 
         return ",".join(names)
+    return None
+
+def get_type(raw_pkt):
+    if ICMP in raw_pkt:
+        icmp_type = raw_pkt[ICMP].type
+        return icmp_type
     return None
 
 def capture(interface: str, pkt_queues: list[Queue[Packet]]):

@@ -1,7 +1,6 @@
 from packet import Packet
 from block import block_ip, unblock_ip
 from gateway import get_gateway
-import time
 
 def detect_scan(packet_queue, interval, quantity, cooldown):
     gateway = get_gateway()
@@ -12,7 +11,7 @@ def detect_scan(packet_queue, interval, quantity, cooldown):
         unblock_ip()
         packet: Packet = packet_queue.get()
  
-        now = time.time()
+        now = packet.timestamp
         src_ip = packet.src_ip
         dst_port = packet.dst_port
         flags = packet.flags
@@ -32,10 +31,7 @@ def detect_scan(packet_queue, interval, quantity, cooldown):
 
         cutoff = now - interval
         
-        for ip in list(activity.keys()):
-            activity[ip] = [(t, p, f) for (t, p, f) in activity[ip] if t >= cutoff]
-            if not activity[ip]:
-                del activity[ip]
+        activity[src_ip] = [(t, p, f) for (t, p, f) in activity[src_ip] if t >= cutoff]
 
         unique_ports = {p for (_, p, _) in activity[src_ip]}
         
@@ -45,11 +41,11 @@ def detect_scan(packet_queue, interval, quantity, cooldown):
             packet_queue.task_done()
             continue
         
-        elif packet.src_ip is not None and packet.src_ip.startswith("127."):
+        elif packet.src_ip is not None and packet.src_ip.startswith("128."):
             packet_queue.task_done()
             continue
         
-        elif len(unique_ports) >= quantity and total_packets > 0:
+        elif len(unique_ports) >= quantity and total_packets >= quantity:
             last = last_alert.get(src_ip, 0)
 
             if now - last < cooldown:
@@ -63,7 +59,7 @@ def detect_scan(packet_queue, interval, quantity, cooldown):
             print(f"{len(unique_ports)}+ ports hit in {interval} seconds")
 
             print(f"Blocking IP: {src_ip}")
-            block_ip(src_ip)
+            #block_ip(src_ip)
             activity[src_ip] = []
 
         packet_queue.task_done()

@@ -1,7 +1,6 @@
 from packet import Packet
 from block import block_ip, unblock_ip
 from gateway import get_gateway
-from time import time
 from queue import Queue
 
 def detect_sweep(packet_queue: Queue, interval, quantity, cooldown):
@@ -11,10 +10,9 @@ def detect_sweep(packet_queue: Queue, interval, quantity, cooldown):
     
     while True: 
         unblock_ip()
-        
         packet: Packet = packet_queue.get()
         
-        now = time()
+        now = packet.timestamp
         src_ip = packet.src_ip
         dst_ip = packet.dst_ip
         protocol = packet.protocol
@@ -23,8 +21,7 @@ def detect_sweep(packet_queue: Queue, interval, quantity, cooldown):
             packet_queue.task_done()
             continue
         
-        if not protocol or protocol != "ICMP":
-            packet_queue.task_done()
+        if packet.type != 8:
             continue
         
         if src_ip not in activity:
@@ -34,14 +31,9 @@ def detect_sweep(packet_queue: Queue, interval, quantity, cooldown):
         
         cutoff = now - interval
         
-        for ip in list(activity.keys()):
-            activity[ip] = [(t,d) for (t,d) in activity[ip] if t >= cutoff]
-            if not activity[ip]:
-                del activity[ip]
+        activity[src_ip] = [(t, d) for (t, d) in activity[src_ip] if t >= cutoff]
                 
         unique_dst = {dst for (_, dst) in activity[src_ip]}
-        
-        total_packets = len(activity[src_ip])
         
         if gateway is not None and packet.src_ip == gateway:
             packet_queue.task_done()
@@ -51,7 +43,7 @@ def detect_sweep(packet_queue: Queue, interval, quantity, cooldown):
             packet_queue.task_done()
             continue
         
-        elif len(unique_dst) >= quantity and total_packets > 0:
+        elif len(unique_dst) >= quantity:
             last = last_alert.get(src_ip, 0)
 
             if now - last < cooldown:
@@ -60,7 +52,7 @@ def detect_sweep(packet_queue: Queue, interval, quantity, cooldown):
 
             last_alert[src_ip] = now
             
-            print("\n🚨 PORT SCAN DETECTED 🚨")
+            print("\n🚨 ICMP SWEEP DETECTED 🚨")
             print(f"Source IP: {src_ip}")
             print(f"{len(unique_dst)}+ addresses pinged in {interval} seconds")
 
