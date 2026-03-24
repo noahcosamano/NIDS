@@ -4,14 +4,22 @@ import time
 from capture import capture
 from detect_scan import detect_scan
 from detect_sweep import detect_sweep
+from cli import start_cli
 
 loopback = r'\Device\NPF_Loopback'
 wifi = "Wi-Fi"
 
 def main():
+    cli_packet_queue = queue.Queue()
     fast_scan_packet_queue = queue.Queue()
     slow_scan_packet_queue = queue.Queue()
     sweep_packet_queue = queue.Queue()
+    
+    cli_thread = threading.Thread(
+        target=start_cli,
+        args=(cli_packet_queue,),
+        daemon=False
+    )
 
     capture_thread = threading.Thread(
         target=capture,
