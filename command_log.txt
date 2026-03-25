@@ -1,3 +1,38 @@
 view
 view tcp
 view tcp -wait=500
+view tcp
+view all
+exit
+view tcp
+view tcp
+view tcp -w
+view 80
+view g
+s
+j
+k
+view
+view protocol
+view tcp
+
+
+view 80
+view tcp
+view
+b
+s
+view
+k
+view
+view tcp
+view 80
+view 443
+view 43
+view udp -wait=2
+view udp -wait=2000
+s
+view
+view tcp
+view tcp
+view tcp d

@@ -23,7 +23,7 @@ def main():
 
     capture_thread = threading.Thread(
         target=capture,
-        args=(loopback, [cli_packet_queue, fast_scan_packet_queue, slow_scan_packet_queue, sweep_packet_queue]),
+        args=(wifi, [cli_packet_queue, fast_scan_packet_queue, slow_scan_packet_queue, sweep_packet_queue]),
         daemon=False
     )
 
