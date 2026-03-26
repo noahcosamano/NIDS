@@ -1,7 +1,7 @@
-from packet import Packet
-from block import block_ip, unblock_ip
-from gateway import get_gateway
-from log import add_to_log
+from classes.packet import Packet
+from utilities.block import block_ip, unblock_ip
+from utilities.gateway import get_gateway
+from logs.log import add_to_log
 import time
 
 def detect_scan(packet_queue, interval, quantity, cooldown):
@@ -57,13 +57,14 @@ def detect_scan(packet_queue, interval, quantity, cooldown):
 
             last_alert[src_ip] = now
             
-            message += f"{time.ctime()}\nPort Scan\n"
+            message += f"\n{time.ctime()}\nPort Scan\n"
             message += f"Source IP: {src_ip}\n"
             message += "\n".join(
                     f"{time.ctime(t)} | Port: {p} | Flags: {f}"
                     for i, (t, p, f) in enumerate(activity[src_ip], start=1)
                 )
             message += f"\nBlocking IP: {src_ip}\n"
+            message += "-" * 50
             add_to_log(message, "detection_log.txt")
             
             #block_ip(src_ip)

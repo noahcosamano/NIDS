@@ -1,7 +1,7 @@
 from scapy.all import sniff
 from scapy.layers.inet import IP, TCP, UDP, ICMP
 from scapy.layers.l2 import Ether
-from packet import Packet
+from config.packet import Packet
 from queue import Queue
 from time import time
 from proto_nums import protocol_nums

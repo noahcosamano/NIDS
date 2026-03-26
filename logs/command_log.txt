@@ -59,3 +59,14 @@ view port
 view 80 -wait=
 view 80 -wait=l
 view 80 -wait=500
+view 443 -wait=500
+view udp -wait=500
+view udp
+view udp -wait=500
+view tcp
+view icmp
+view igmp
+view all
+
+& C:/Users/samno/AppData/Local/Microsoft/WindowsApps/python3.13.exe c:/Users/samno/git-repos/ids/main.py
+

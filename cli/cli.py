@@ -1,7 +1,7 @@
 from queue import Queue
 import threading
 from view_packets import view_proto, view_port
-from log import add_to_log
+from logs.log import add_to_log
 import os
 
 VALID_PROTOCOLS = {"TCP", "UDP", "ICMP", "IGMP", "ALL"}

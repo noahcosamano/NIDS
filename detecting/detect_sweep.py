@@ -1,8 +1,8 @@
-from packet import Packet
-from block import block_ip, unblock_ip
-from gateway import get_gateway
+from config.packet import Packet
+from utilities.block import block_ip, unblock_ip
+from utilities.gateway import get_gateway
 from queue import Queue
-from log import add_to_log
+from logs.log import add_to_log
 import time
 
 def detect_sweep(packet_queue: Queue, interval, quantity, cooldown):

@@ -1,0 +1,26 @@
+
+Thu Mar 26 01:01:20 2026
+Port Scan
+Source IP: 127.0.0.1
+Thu Mar 26 01:01:20 2026 | Port: 25 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 21 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 22 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 23 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 29 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 11 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 31 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 7 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 1 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 6 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 38 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 5 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 19 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 10 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 26 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 3 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 9 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 8 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 39 | Flags: SYN
+Thu Mar 26 01:01:20 2026 | Port: 2 | Flags: SYN
+Blocking IP: 127.0.0.1
+--------------------------------------------------
