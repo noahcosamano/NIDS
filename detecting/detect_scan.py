@@ -1,7 +1,7 @@
 from configurations.packet import Packet
 from utilities.block import block_ip, unblock_ip
 from utilities.gateway import get_gateway
-from logs.log import add_to_log
+from logs.log import add_to_log, log_event
 import time
 
 def detect_scan(packet_queue, interval, quantity, cooldown):
@@ -18,6 +18,8 @@ def detect_scan(packet_queue, interval, quantity, cooldown):
         src_ip = packet.src_ip
         dst_port = packet.dst_port
         flags = packet.flags
+        
+        log_event(f"Analyzing packet from {src_ip}...")
 
         if not src_ip or not dst_port:
             packet_queue.task_done()

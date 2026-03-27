@@ -5,6 +5,7 @@ from configurations.packet import Packet
 from queue import Queue
 from time import time
 from configurations.proto_nums import protocol_nums
+from logs.log import log_event
 
 def handle(raw_pkt, packet_queues: list[Queue[Packet]]):
     if IP not in raw_pkt:
@@ -44,7 +45,7 @@ def handle(raw_pkt, packet_queues: list[Queue[Packet]]):
         dst_port, flags, time()
     )
     
-    #print(pkt)
+    log_event(f"Packet Received: {pkt}")
 
     for queue in packet_queues:
         queue.put(pkt)
@@ -70,7 +71,9 @@ def get_type(raw_pkt):
         return icmp_type
     return None
 
-def capture(interface: str, pkt_queues: list[Queue[Packet]]):
+def capture(interface: str, pkt_queues: list[Queue[Packet]]): # * Note: capture takes a list of multiple packet queue's
+                                                              #   to have seperate but identical queues for each type of   
+                                                              #   scan in order to prevent race conditions from occuring.
     sniff(
         iface=interface,
         filter="ip",

@@ -1,7 +1,7 @@
 from queue import Queue
 import threading
 from cli.view_packets import view_proto, view_port
-from logs.log import add_to_log
+from logs.log import add_to_log, log_event
 import os
 
 VALID_PROTOCOLS = {"TCP", "UDP", "ICMP", "IGMP", "ALL"}
@@ -95,13 +95,16 @@ def parse_command(cmd: str):
 # CLI LOOP
 # -------------------------
 def start_cli(packet_queue: Queue):
+    
     stop_event = None
     worker_thread = None
 
     while True:
         welcome()
+        log_event("Dashboard initialized. Waiting for user input...")
         cmd = input("NIDS> ")
         add_to_log(f"{cmd}\n", "logs/command_log.txt")
+        log_event(f"User Command: {cmd}")
 
         if cmd.lower() == "exit":
             print("Exiting CLI...")

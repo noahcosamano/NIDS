@@ -2,7 +2,7 @@ from configurations.packet import Packet
 from utilities.block import block_ip, unblock_ip
 from utilities.gateway import get_gateway
 from queue import Queue
-from logs.log import add_to_log
+from logs.log import add_to_log, log_event
 import time
 
 def detect_sweep(packet_queue: Queue, interval, quantity, cooldown):
@@ -19,6 +19,8 @@ def detect_sweep(packet_queue: Queue, interval, quantity, cooldown):
         src_ip = packet.src_ip
         dst_ip = packet.dst_ip
         type = packet.type
+        
+        log_event(f"Analyzing destination addressed from {src_ip}")
         
         if not src_ip:
             packet_queue.task_done()
