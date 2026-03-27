@@ -63,11 +63,11 @@ def send_packet(protocol, dst_ip, src_ip=None, src_port=None, dst_port=None,
 def main():
     protocol = "ARP"
     dst_ip = "127.0.0.1"
-    src_ip = "192.168.1.1"
+    src_ip = "192.168.1.2"
     src_port = None
     dst_port = None
-    src_mac = "12:34:56:78:90:aa"
-    dst_mac = "aa:90:78:56:34:12"
+    src_mac = "56:1A:7D:3F:4B:6C"
+    dst_mac = "41:1A:7D:3F:4B:6C"
     flags = None
     num_packets = 1
     

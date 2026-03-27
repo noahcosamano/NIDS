@@ -89,7 +89,7 @@ class PortScan:
         for t, p, f in sorted_activity:
             message += f"{time.ctime(t)} | Port: {p} | Flags: {f}\n"
 
-        message += f"Blocking IP: {src_ip}\n" + "-"*50
+        message += f"Blocking {src_ip} for 300 seconds\n" + "-"*50
         add_to_log(message, "logs/detection_log.txt")
 
         # Keep activity so future packets can still be tracked
@@ -99,7 +99,7 @@ class PortScan:
             (t, p, f) for (t, p, f) in self.activity[src_ip] if t >= cutoff
         ]
 
-def detect_scan(packet_queue, interval, quantity, cooldown):
+def detect_port_scan(packet_queue, interval, quantity, cooldown):
     """Thread entry point for scan detection."""
     detector = PortScan(packet_queue, interval, quantity, cooldown)
 

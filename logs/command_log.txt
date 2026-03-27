@@ -26,3 +26,18 @@ view arp
  "C:/Program Files/Python312/python.exe" c:/Users/ncosa/git-repos/ids/test/send_packets.py
 view arp
 view arp
+view arp
+view tcp
+view arp
+view arp
+view arp
+view tcp
+view udp
+view arp
+view arp
+view arp
+view tcp
+view arp
+view arp
+view tcp
+view arp

@@ -13,6 +13,8 @@ def handle(raw_pkt, packet_queues: list[Queue[Packet]]):
     dst_mac = raw_pkt[Ether].dst if Ether in raw_pkt else None
     
     if ARP in raw_pkt:
+        src_mac = raw_pkt[ARP].hwsrc
+        dst_mac = raw_pkt[ARP].hwdst
         src_ip = raw_pkt[ARP].psrc
         dst_ip = raw_pkt[ARP].pdst
         protocol = "ARP"

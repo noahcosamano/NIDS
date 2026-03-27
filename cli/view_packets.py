@@ -21,7 +21,7 @@ def view_proto(packet_queue, proto, stop_event, wait_ms: int):
             break
 
         try:
-            packet = packet_queue.get_nowait()
+            packet = packet_queue.get(timeout=0.1)
         except Empty:
             continue
 
