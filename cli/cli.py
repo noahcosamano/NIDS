@@ -104,17 +104,15 @@ def parse_command(cmd: str):
 # -------------------------
 # CLI LOOP
 # -------------------------
-def start_cli(packet_queue: Queue, system_stop_event):
+def start_cli(packet_queue: Queue, stop_event):
     try:
-        while not system_stop_event.is_set():
+        while not stop_event.is_set():
             welcome()
             cmd = input("NIDS> ")
             add_to_log(f"{cmd}\n", "logs/command_log.txt")
 
             if cmd.lower() == "exit":
-                print("Exiting CLI...")
-                if stop_event:
-                    stop_event.set()
+                stop_event.set()
                 break
 
             try:
