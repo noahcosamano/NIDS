@@ -7,11 +7,13 @@ from detecting.detect_sweep import detect_sweep
 from detecting.detect_arp_spoof import detect_arp_spoof
 from detecting.detect_dns_tunnel import detect_dns_tunnel
 from cli.cli import start_cli
-                                                                            
+                            
+# standard adapters for debugging                                          
 loopback = r'\Device\NPF_Loopback'
 wifi = "Wi-Fi"
 
-stop_event = threading.Event()
+# Ends all threads when ctrl+c is pressed for debugging
+stop_event = threading.Event()                 
   
 def main():
     cli_packet_queue = queue.Queue()
@@ -21,6 +23,8 @@ def main():
     sweep_packet_queue = queue.Queue()
     dns_tunnel_packet_queue = queue.Queue()
     
+    # All threads are set to daemon=True to end when program ends
+    # all thread names are for debugging
     cli_thread = threading.Thread(
         target=start_cli,
         args=(cli_packet_queue, stop_event),
@@ -28,6 +32,7 @@ def main():
         daemon=True
     )
 
+    # All packet queues are passed in so each event has its own queue to prevent race conditions
     capture_thread = threading.Thread(
         target=capture,
         args=(
@@ -40,6 +45,7 @@ def main():
 
     fast_scan_thread = threading.Thread(
         target=detect_port_scan,
+        # queue, interval, quantity, cooldown, stop event
         args=(fast_scan_packet_queue, 10, 20, 30, stop_event),
         name="FAST-SCAN",
         daemon=True
@@ -47,6 +53,7 @@ def main():
     
     slow_scan_thread = threading.Thread(
         target=detect_port_scan,
+        # queue, interval, quantity, cooldown, stop event
         args=(slow_scan_packet_queue, 60, 50, 30, stop_event),
         name="SLOW-SCAN",
         daemon=True
@@ -54,6 +61,7 @@ def main():
     
     sweep_thread = threading.Thread(
         target=detect_sweep,
+        # queue, interval, quantity, cooldown, stop event
         args=(sweep_packet_queue, 5, 10, 300, stop_event),
         name="SWEEP",
         daemon=True
@@ -73,6 +81,7 @@ def main():
         daemon=True
     )
 
+    # Need to find a way to prevent so many threads being used, going to slow program
     cli_thread.start()
     capture_thread.start()
     fast_scan_thread.start()
@@ -88,8 +97,10 @@ def main():
         return
     finally:
         print("\nShutting down...")
+        # Set stop event so all threads stop running, program shuts down
         stop_event.set()
         
+        # Join gives threads a small window to finish current process to ensure cleanup
         capture_thread.join(timeout=1)
         fast_scan_thread.join(timeout=1)
 
