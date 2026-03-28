@@ -41,3 +41,43 @@ view arp
 view arp
 view tcp
 view arp
+& "C:/Program Files/Python312/python.exe" c:/Users/ncosa/git-repos/ids/test/send_packets.py
+& "C:/Program Files/Python312/python.exe" c:/Users/ncosa/git-repos/ids/test/send_packets.py
+& "C:/Program Files/Python312/python.exe" c:/Users/ncosa/git-repos/ids/main.py
+view arp
+view arp
+view tcp
+view all
+view all
+view udp
+view arp
+dns
+view dns
+view tcp
+view all
+view all
+view dns
+view all
+view dns
+view udp
+view icmp
+view icmp
+view udp
+view tcp
+view 53
+view 5353
+view 53
+view tcp
+view dns
+view tcp
+view udp
+view icmp
+view arp
+view dns
+view 53
+view 5353
+view 53
+view dns
+view dns
+view 53
+view dns

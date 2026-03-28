@@ -27,7 +27,6 @@ class ArpSpoof:
         elif self.arp_table[src_ip][0] != src_mac:
             self.log_alert(src_ip, self.arp_table[src_ip][0], src_mac)
             
-            
     def log_alert(self, ip, old_mac, new_mac):
         message = f"\n{time.ctime()}\nARP Spoof\n"
         message += f"{ip} changed from {old_mac} to {new_mac}\n"

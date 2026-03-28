@@ -61,16 +61,21 @@ def send_packet(protocol, dst_ip, src_ip=None, src_port=None, dst_port=None,
         raise ValueError(f"Unsupported protocol: {protocol}")
     
 def main():
-    protocol = "ARP"
+    protocol = "UDP"
     dst_ip = "127.0.0.1"
     src_ip = "192.168.1.2"
-    src_port = None
-    dst_port = None
+    src_port = 12345
+    dst_port = 53
     src_mac = "56:1A:7D:3F:4B:6C"
     dst_mac = "41:1A:7D:3F:4B:6C"
     flags = None
     num_packets = 1
     
     send_packet(protocol, dst_ip, src_ip, src_port, dst_port, src_mac, dst_mac, flags, num_packets)
+    
+    '''for port in range(40):
+        send_packet(protocol, dst_ip, src_ip, src_port, port, src_mac, dst_mac, flags, num_packets)
+        pass'''
+    
     
 main()

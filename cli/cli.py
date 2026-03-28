@@ -4,7 +4,7 @@ from cli.view_packets import view_proto, view_port
 from logs.log import add_to_log, log_event
 import os
 
-VALID_PROTOCOLS = {"TCP", "UDP", "ICMP", "ARP", "IGMP", "ALL"}
+VALID_PROTOCOLS = {"TCP", "UDP", "ICMP", "ARP", "DNS", "IGMP", "ALL"}
 
 
 # -------------------------
@@ -53,7 +53,7 @@ def validate_target(arg: str):
         if 1 <= port <= 65535:
             return port
 
-    raise ValueError(f"'{arg}' is not a valid protocol or port")
+    raise ValueError(f"'{arg}' is not a supported protocol or port")
 
 
 def parse_wait(parts):
