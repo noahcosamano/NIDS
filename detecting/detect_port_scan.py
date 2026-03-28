@@ -2,7 +2,7 @@ from configurations.packet import Packet
 from utilities.block import block_ip, unblock_ip
 from utilities.gateway import get_gateway
 from configurations.scan_types import flag_to_name
-from logs.log import add_to_log
+from logs.log import add_to_log, report_to_webhook
 import time
 
 class PortScan:
@@ -89,11 +89,9 @@ class PortScan:
         for t, p, f in sorted_activity:
             message += f"{time.ctime(t)} | Port: {p} | Flags: {f}\n"
 
-        message += f"Blocking {src_ip} for 300 seconds\n" + "-"*50
-        add_to_log(message, "logs/detection_log.txt")
-
-        # Keep activity so future packets can still be tracked
-        # Remove only old packets outside interval
+        message += f"Blocking {src_ip} for 300 seconds\n"
+        report_to_webhook(scan_type, message)
+        
         cutoff = time.time() - self.interval
         self.activity[src_ip] = [
             (t, p, f) for (t, p, f) in self.activity[src_ip] if t >= cutoff

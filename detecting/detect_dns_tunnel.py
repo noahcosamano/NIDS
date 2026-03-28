@@ -1,4 +1,5 @@
 from configurations.packet import Packet
+from logs.log import report_to_webhook
 import math
 from collections import Counter 
 import time
@@ -14,13 +15,14 @@ class DnsTunnel:
         if packet.query.endswith(".local."):
             return
         
-        print(packet.query)
-        
         entropy = self.string_entropy(packet.query)
-        print(entropy)
         
         if entropy > 4.0:
-            print(f"DNS Tunnel detected: {packet.query} | Entropy: {entropy}")
+            message = f"\n{time.ctime()}\nDNS Tunnel\nSource IP: {packet.src_ip}\n"
+            message += f"Query: {packet.query} | Entropy: {entropy}\n"
+            message += f"Blocking {packet.src_ip} for 300 seconds\n"
+            
+            report_to_webhook("DNS Tunnel", message)
         
     def string_entropy(self, payload):
         if not payload:
