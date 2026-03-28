@@ -81,3 +81,6 @@ view dns
 view dns
 view 53
 view dns
+view dns
+view dns
+view dns

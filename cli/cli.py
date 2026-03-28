@@ -105,45 +105,40 @@ def parse_command(cmd: str):
 # CLI LOOP
 # -------------------------
 def start_cli(packet_queue: Queue, system_stop_event):
-    
-    stop_event = None
-    worker_thread = None
+    try:
+        while not system_stop_event.is_set():
+            welcome()
+            cmd = input("NIDS> ")
+            add_to_log(f"{cmd}\n", "logs/command_log.txt")
 
-    while not system_stop_event.is_set():
-        welcome()
-        cmd = input("NIDS> ")
-        add_to_log(f"{cmd}\n", "logs/command_log.txt")
+            if cmd.lower() == "exit":
+                print("Exiting CLI...")
+                if stop_event:
+                    stop_event.set()
+                break
 
-        if cmd.lower() == "exit":
-            print("Exiting CLI...")
+            try:
+                parsed = parse_command(cmd)
+            except ValueError as e:
+                error(str(e))
+                continue
+
+            # stop previous listener
             if stop_event:
                 stop_event.set()
-            if worker_thread:
-                worker_thread.join()
-            break
 
-        try:
-            parsed = parse_command(cmd)
-        except ValueError as e:
-            error(str(e))
-            continue
+            stop_event = threading.Event()
 
-        # stop previous listener
-        if stop_event:
-            stop_event.set()
-        if worker_thread:
-            worker_thread.join()
+            target = parsed["target"]
+            wait_ms = parsed["wait_ms"]
 
-        stop_event = threading.Event()
-
-        target = parsed["target"]
-        wait_ms = parsed["wait_ms"]
-
-        if isinstance(target, str):
-            clear()
-            print(f"\nListening for {target} packets (delay={wait_ms}ms)...")
-            view_proto(packet_queue, target, stop_event, wait_ms)
-        else:
-            clear()
-            print(f"\nListening on port {target} (delay={wait_ms}ms)...")
-            view_port(packet_queue, target, stop_event, wait_ms)
+            if isinstance(target, str):
+                clear()
+                print(f"\nListening for {target} packets (delay={wait_ms}ms)...")
+                view_proto(packet_queue, target, stop_event, wait_ms)
+            else:
+                clear()
+                print(f"\nListening on port {target} (delay={wait_ms}ms)...")
+                view_port(packet_queue, target, stop_event, wait_ms)
+    except EOFError:
+        return

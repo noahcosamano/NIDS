@@ -37,14 +37,14 @@ def main():
 
     fast_scan_thread = threading.Thread(
         target=detect_port_scan,
-        args=(fast_scan_packet_queue, 10, 20, 30),
+        args=(fast_scan_packet_queue, 10, 20, 30, stop_event),
         name="FAST-SCAN",
         daemon=True
     )
     
     slow_scan_thread = threading.Thread(
         target=detect_port_scan,
-        args=(slow_scan_packet_queue, 60, 50, 30),
+        args=(slow_scan_packet_queue, 60, 50, 30, stop_event),
         name="SLOW-SCAN",
         daemon=True
     )
@@ -58,7 +58,7 @@ def main():
     
     arp_spoof_thread = threading.Thread(
         target=detect_arp_spoof,
-        args=(arp_spoof_packet_queue, 30),
+        args=(arp_spoof_packet_queue, 30, stop_event),
         name="ARP SPOOF",
         daemon=True
     )
@@ -71,17 +71,15 @@ def main():
     arp_spoof_thread.start()
     
     try:
-        while True:
-            time.sleep(1)
+        while cli_thread.is_alive():
+            time.sleep(0.1) 
     except KeyboardInterrupt:
-        print("Shutting down...")
+        return
+    finally:
+        print("\nShutting down...")
         stop_event.set()
         
-    cli_thread.join()
-    capture_thread.join()
-    fast_scan_thread.join()
-    slow_scan_thread.join()
-    sweep_thread.join()
-    arp_spoof_thread.join()
+        capture_thread.join(timeout=1)
+        fast_scan_thread.join(timeout=1)
 
 main()

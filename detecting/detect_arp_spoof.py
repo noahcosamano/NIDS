@@ -34,10 +34,10 @@ class ArpSpoof:
         message += f"Blocking {new_mac} for 300 seconds\n" + "-"*50
         add_to_log(message, "logs/detection_log.txt")
         
-def detect_arp_spoof(packet_queue, cooldown):
+def detect_arp_spoof(packet_queue, cooldown, stop_event):
     detector = ArpSpoof(packet_queue, cooldown)
     
-    while True:
+    while not stop_event.is_set():
         unblock_mac()
         packet = packet_queue.get()
         try:
