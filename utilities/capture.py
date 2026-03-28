@@ -48,20 +48,20 @@ def handle(raw_pkt, packet_queues: list[Queue[Packet]]):
             src_port, dst_port = raw_pkt[UDP].sport, raw_pkt[UDP].dport
 
         # 5. DNS Specific Logic
-        payload = None
+        query = None
         if DNS in raw_pkt:
             protocol = "DNS"
             # Only extract qname if it exists (some DNS responses don't mirror the query)
             if raw_pkt[DNS].qd:
-                payload = raw_pkt[DNS].qd.qname.decode('utf-8', errors='ignore')
+                query = raw_pkt[DNS].qd.qname.decode('utf-8', errors='ignore')
         elif Raw in raw_pkt:
-            payload = raw_pkt[Raw].load
+            query = raw_pkt[Raw].load
 
         # 6. Final Packet Assembly
         pkt = Packet(
             dst_mac, src_mac, protocol,
             get_type(raw_pkt), src_ip, dst_ip, 
-            src_port, dst_port, flags, payload, time()
+            src_port, dst_port, flags, query, time()
         )
 
         for queue in packet_queues:
