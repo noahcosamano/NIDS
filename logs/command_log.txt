@@ -1,0 +1,1 @@
+& "C:/Program Files/Python312/python.exe" c:/Users/ncosa/git-repos/AmanoWatch/test/send_packets.py

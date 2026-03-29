@@ -103,6 +103,5 @@ def main():
     '''for port in range(40):
         send_packet(protocol, dst_ip, src_ip, src_port, port, src_mac, dst_mac, flags, num_packets)
         pass'''
-    
-    
+
 main()
