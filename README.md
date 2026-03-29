@@ -4,24 +4,25 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Status](https://img.shields.io/badge/Status-In--Development-orange)]()
 
-**AmanoWatch** is a [briefly describe your project, e.g., lightweight time-tracking tool / sleek dashboard for monitoring / custom watch face engine] designed for [target audience/use case].
+**AmanoWatch** is a simple open-source homemade Intrusion Detection System custom detection for, but not limited to: various port scan types,
+ICMP ping sweeps, ARP spoofing, and DNS tunneling. **AmanoWatch** also features a light-weight interface to filter and view network traffic via port/protocol. 
+designed for Network Enthusiasts, Penetration Testers, and Security Professionals.
 
 ---
 
 ## ✨ Features
 
-* **Real-time Monitoring:** [Feature description]
-* **Customizable UI:** [Feature description]
-* **Lightweight & Fast:** Optimized for performance.
-* **Cross-platform:** Works seamlessly across [Windows/Linux/Web].
+* **Real-time Monitoring:** Detection for, but not limited to: various port scans, ICMP sweeps, ARP spoofing, and DNS tunneling.
+* **Customizable UI:** Allows users to filter and view network traffic by protocol, port, and interface.
+* **Lightweight & Fast:** Multithreading creates a lightweight and memory efficient solution by preventing race conditions.
+* **Logging:** Seamlessely incorporates a discord webhook in order to log directly to servers/text channels, providing a response solution.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
 Before installing, ensure you have the following:
-* [e.g., Node.js v18+]
-* [e.g., Python 3.10+]
+* Python 3.10+
 
 ### Installation
 
