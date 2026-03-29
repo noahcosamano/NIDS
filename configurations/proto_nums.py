@@ -1,3 +1,4 @@
+# Here exists every single protocol number
 protocol_nums = {
     0: "HOPOPT",
     1: "ICMP",
