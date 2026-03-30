@@ -24,3 +24,6 @@ view udp
 view aro
 view arp
 exit
+view all
+view all
+exit
