@@ -1,0 +1,26 @@
+& "C:/Program Files/Python312/python.exe" c:/Users/ncosa/git-repos/AmanoWatch/test/send_packets.py
+view dns
+view 53
+view arp
+view all
+view all
+view arp
+view dns
+view tcp
+view udp
+view igmp
+view dns
+view al
+view all
+& "C:/Program Files/Python312/python.exe" c:/Users/ncosa/git-repos/AmanoWatch/main.py
+& "C:/Program Files/Python312/python.exe" c:/Users/ncosa/git-repos/AmanoWatch/main.py
+& "C:/Program Files/Python312/python.exe" c:/Users/ncosa/git-repos/AmanoWatch/main.py
+& "C:/Program Files/Python312/python.exe" c:/Users/ncosa/git-repos/AmanoWatch/main.py
+view dns
+view tcp
+view all
+view tcp
+view udp
+view aro
+view arp
+exit

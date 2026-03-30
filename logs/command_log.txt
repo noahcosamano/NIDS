@@ -1,8 +1,0 @@
-& "C:/Program Files/Python312/python.exe" c:/Users/ncosa/git-repos/AmanoWatch/test/send_packets.py
-view dns
-view 53
-view arp
-view all
-view all
-view arp
-view dns
