@@ -13,7 +13,7 @@ class Packet(ctypes.Structure):
         ("src_port", ctypes.c_uint16),
         ("dst_port", ctypes.c_uint16),
         ("protocol", ctypes.c_uint8),
-        ("type", ctypes.c_uint8),
+        ("type", ctypes.c_uint16),
         ("tcp_flags", ctypes.c_uint8),
         ("tv_sec", ctypes.c_longlong),
         ("tv_usec", ctypes.c_longlong),

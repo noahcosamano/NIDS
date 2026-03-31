@@ -21,6 +21,8 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
     // Total time is the sum of tv_sec and tv_usec
     p->tv_sec = (long long)header->ts.tv_sec; // Seconds
     p->tv_usec = (long long)header->ts.tv_usec; // Microseconds
+    p->payload = NULL;     // Explicitly nullify so error doesnt occur
+    p->payload_len = 0;
 
     int offset = 0; // Tracks where program is in each header offset
     uint16_t eth_type = 0; // Initialize ethernet type
@@ -69,6 +71,19 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
         memcpy(p->src_ip, &ip6->src_ip, 16);
         memcpy(p->dst_ip, &ip6->dst_ip, 16);
         transport_offset = offset + 40;
+
+        if (p->protocol == 58) { // ICMPv6
+            struct icmp_header* icmp6 = (struct icmp_header*)(pkt_data + transport_offset);
+
+            p->src_port = icmp6->type;
+            p->dst_port = icmp6->code;
+
+            p->payload = pkt_data + transport_offset + 8;
+            p->payload_len = (header->caplen > (uint32_t)(transport_offset + 8)) ?
+                header->caplen - (transport_offset + 8) : 0;
+
+            return;
+        }
     }
     else if (eth_type == 0x0806) { // ARP
         // Get ARP header

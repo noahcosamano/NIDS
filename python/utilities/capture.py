@@ -12,7 +12,7 @@ def get_protocol(protocol_num, src_port, dst_port):
         protocol = service_ports.get(dst_port, service_ports.get(src_port, "TCP"))
     elif protocol == "UDP":
         protocol = service_ports.get(dst_port, service_ports.get(src_port, "UDP"))
-    elif protocol == "ARP" or protocol == "DNS":
+    elif protocol == "ARP":
         return protocol
     else:
         protocol = protocol_nums.get(protocol, "UNKNOWN")
