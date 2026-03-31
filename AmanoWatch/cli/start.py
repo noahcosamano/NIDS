@@ -1,8 +1,10 @@
 from queue import Queue
 from utils.welcome import welcome
+from utils.ascii import show_ascii
 from utils.ui_helpers import error, clear
-from cli.output import view_port, view_proto
+from cli.commands.view import view_port, view_proto
 from cli.parse import parse_command
+import time
 import threading
 
 # CLI loop
@@ -12,6 +14,8 @@ def start_cli(packet_queue: Queue, system_stop_event):
     stop_event = threading.Event()
     
     try:
+        show_ascii()
+        time.sleep(1.2)
         while not system_stop_event.is_set():
             welcome()
             cmd = input("NIDS> ")
@@ -21,7 +25,7 @@ def start_cli(packet_queue: Queue, system_stop_event):
                 break
 
             try:
-                parsed = parse_command(cmd)
+                parsed = parse_command(packet_queue, cmd, stop_event)
             except ValueError as e:
                 error(str(e))
                 continue
@@ -32,20 +36,6 @@ def start_cli(packet_queue: Queue, system_stop_event):
 
             # Create new stop event for next input break
             stop_event = threading.Event()
-
-            target = parsed["target"]
-            wait_ms = parsed["wait_ms"]
-
-            # If a string is passed, it must be protocol filtered and this will execute
-            if isinstance(target, str):
-                clear()
-                print(f"\nListening for {target} packets (delay={wait_ms}ms)...")
-                view_proto(packet_queue, target, stop_event, wait_ms)
-            else:
-                # Otherwise it must be port filtered and this will execute
-                clear()
-                print(f"\nListening on port {target} (delay={wait_ms}ms)...")
-                view_port(packet_queue, target, stop_event, wait_ms)
                 
     # IMPORTANT: This error occurs when all threads stop, this is to catch it and end runtime.
     except EOFError:

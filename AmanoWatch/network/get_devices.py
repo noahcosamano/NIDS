@@ -32,16 +32,4 @@ def get_devices():
     # C RETURNS BYTES; WE NEED A STRING
     devices_str = devices_raw.decode('utf-8', errors='ignore')
     
-    print("\n" + "="*40)
-    print("AVAILABLE NETWORK DEVICES:")
-    print("="*40)
-    
-    # IF YOUR C CODE RETURNS A COMMA-SEPARATED LIST, SPLIT IT:
-    for i, dev in enumerate(devices_str.split('|'), 1):
-        if dev.strip():
-            print(f"{i}. {dev.strip()}")
-
-    print("="*40 + "\n")
-
-if __name__ == "__main__":
-    get_devices()
+    return devices_str

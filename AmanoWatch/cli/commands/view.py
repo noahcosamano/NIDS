@@ -1,9 +1,22 @@
 from capture.config.config import udp_service_ports, tcp_service_ports
 from capture.classes.PyPacket import PyPacket
+from utils.ui_helpers import clear
 from queue import Empty
 import msvcrt
 import os
 import time
+
+def execute(packet_queue, target, wait_ms, stop_event):
+    # If a string is passed, it must be protocol filtered and this will execute
+    if isinstance(target, str):
+        clear()
+        print(f"\nListening for {target} packets (delay={wait_ms}ms)...")
+        view_proto(packet_queue, target, stop_event, wait_ms)
+    else:
+        # Otherwise it must be port filtered and this will execute
+        clear()
+        print(f"\nListening on port {target} (delay={wait_ms}ms)...")
+        view_port(packet_queue, target, stop_event, wait_ms)
 
 # Function called if a protocol is passed into "view"
 def view_proto(packet_queue, proto, stop_event, wait_ms: int):
@@ -27,7 +40,7 @@ def view_proto(packet_queue, proto, stop_event, wait_ms: int):
         if msvcrt.kbhit():
             msvcrt.getch()
             stop_event.set()
-            os.system("cls")
+            clear()
             break
 
         try:

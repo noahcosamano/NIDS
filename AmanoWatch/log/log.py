@@ -38,7 +38,7 @@ def report_to_webhook(detection_type, content):
         response = requests.post(WEBHOOK_URL, json=data, timeout=5)
         
         if response.status_code == 204:
-            print("Successfully reported to webhook.")
+            pass
         else:
             print(f"Failed to send message: {response.status_code}")
             print(f"Response Body: {response.text}") # This tells you EXACTLY what is wrong

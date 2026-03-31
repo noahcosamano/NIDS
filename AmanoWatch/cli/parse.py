@@ -1,4 +1,6 @@
 from cli.verify import verify_target
+from cli.commands import view, devices
+from utils.ui_helpers import error
 
 def parse_wait(parts):
     # Get "wait" argument, this is so terminal does not get clogged with many packets
@@ -19,9 +21,8 @@ def parse_wait(parts):
 
     return wait_ms
 
-
 # Command helper
-def parse_command(cmd: str):
+def parse_command(packet_queue, cmd: str, stop_event):
     parts = cmd.strip().split()
 
     if not parts:
@@ -29,20 +30,22 @@ def parse_command(cmd: str):
 
     command = parts[0].lower()
 
-    # I intend on adding other commands in the future, although I am not sure what
-    if command != "view":
-        raise ValueError(f"'{command}' is not a valid command")
-
-    if len(parts) < 2:
-        # If "view" comes alone
-        raise ValueError("'view' requires a protocol or port")
-
-    # ie. "tcp", "53", "arp"
-    target = verify_target(parts[1])
-    wait_ms = parse_wait(parts[2:])
-
-    return {
-        "command": "view",
-        "target": target,
-        "wait_ms": wait_ms,
-    }
+    if command == "view":
+        if len(parts) < 2:
+            error("'view' requires a protocol or port")
+        
+        # ie. "tcp", "53", "arp"
+        target = verify_target(parts[1])
+        wait_ms = parse_wait(parts[2:])
+        
+        view.execute(packet_queue, target, wait_ms, stop_event)
+        return
+    
+    if command == "devices":
+        if len(parts) > 1:
+            error("'devices' takes no arguments")
+            
+        devices.execute(stop_event)
+        return
+    
+    error("Invalid command")

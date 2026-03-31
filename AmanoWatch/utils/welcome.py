@@ -1,18 +1,20 @@
 def welcome():
-    # I would like to make welcome message print better, looks sloppy at the moment
-    print("\n" + "="*40)
-    print("            NIDS CLI INTERFACE")
-    print("="*40)
+    print(" " + "═"*85)
+    print("  AmanoWatch Command Line | INTRUSTION DETECTION SYSTEM STATUS: \033[92mACTIVE\033[0m")
+    print(" " + "═"*85)
 
-    print("\nAvailable Commands:\n")
+    print("\n\033[1mAVAILABLE COMMANDS:\033[0m")
 
-    print("  view [protocol | port] -wait=[ms]")
-    print("    • View filtered traffic in real time")
-    print("    • Examples:")
-    print("        view tcp -wait=500")
-    print("        view 80  -wait=500")
+    # Command: View
+    print("\n  \033[94mview\033[0m [proto|port] \033[2m-wait=[ms]\033[0m")
+    print("  └─ Stream live traffic. (e.g., 'view tcp')")
 
-    print("\n  exit")
-    print("    • Exit the program")
+    # Command: Devices
+    print("\n  \033[94mdevices\033[0m")
+    print("  └─ List available network interfaces.")
 
-    print("\n" + "="*40 + "\n")
+    # Command: Exit
+    print("\n  \033[91mexit\033[0m")
+    print("  └─ Shutdown the NIDS.")
+
+    print("\n" + "─"*87 + "\n")

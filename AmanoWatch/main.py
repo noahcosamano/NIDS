@@ -37,7 +37,7 @@ def main():
     capture_thread = threading.Thread(
         target=begin_capture,
         args=(
-            wifi_laptop, [cli_packet_queue, fast_scan_packet_queue, slow_scan_packet_queue, 
+            pc_wifi, [cli_packet_queue, fast_scan_packet_queue, slow_scan_packet_queue, 
             sweep_packet_queue, arp_spoof_packet_queue, dns_tunnel_packet_queue], stop_event
         ),
         name="CAPTURE",
