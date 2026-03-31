@@ -1,7 +1,7 @@
 from queue import Queue
 import threading
 from cli.view_packets import view_proto, view_port
-from configurations.proto_nums import protocol_nums
+from configurations.proto_nums import protocol_nums, udp_service_ports, tcp_service_ports
 from utilities.ui_helpers import clear, error
 
 def welcome():
@@ -29,7 +29,8 @@ def validate_target(arg: str):
     """Validate protocol or port."""
     arg = arg.upper()
 
-    if arg in protocol_nums.values() or arg == "ALL":
+    if arg in protocol_nums.values() or arg == "ALL" or arg in \
+    udp_service_ports.values() or arg in tcp_service_ports.values():
         return arg
 
     if arg.isdigit():

@@ -1,6 +1,6 @@
 import ctypes
 from configurations.packet import PyPacket, Packet
-from configurations.proto_nums import protocol_nums, service_ports
+from configurations.proto_nums import protocol_nums, tcp_service_ports, udp_service_ports
 from utilities.format_fields import format_flags, format_ip, format_mac
 from utilities.ui_helpers import error
 from utilities.load_dll import get_dll_path
@@ -9,9 +9,9 @@ from queue import Queue
 def get_protocol(protocol_num, src_port, dst_port):
     protocol = protocol_nums[protocol_num]
     if protocol == "TCP":
-        protocol = service_ports.get(dst_port, service_ports.get(src_port, "TCP"))
+        protocol = tcp_service_ports.get(dst_port, tcp_service_ports.get(src_port, "TCP"))
     elif protocol == "UDP":
-        protocol = service_ports.get(dst_port, service_ports.get(src_port, "UDP"))
+        protocol = udp_service_ports.get(dst_port, udp_service_ports.get(src_port, "UDP"))
     elif protocol == "ARP":
         return protocol
     elif protocol == "ICMPV6":

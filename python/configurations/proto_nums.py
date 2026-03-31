@@ -30,11 +30,54 @@ protocol_nums = {
 }
 
 # Updated service ports (all uppercase)
-service_ports = {
-    80: "HTTP", 443: "HTTPS/TLS", 8080: "HTTP-PROXY",
-    53: "DNS", 67: "DHCP-SERVER", 68: "DHCP-CLIENT", 123: "NTP", 161: "SNMP", 
-    1900: "SSDP", 5353: "MDNS", 20: "FTP-DATA", 21: "FTP-CONTROL", 22: "SSH", 
-    23: "TELNET", 25: "SMTP", 110: "POP3", 143: "IMAP", 
-    445: "MICROSOFT-DS (SMB)", 3389: "RDP", 1433: "MSSQL", 3306: "MYSQL", 
-    5432: "POSTGRESQL", 5060: "SIP", 5061: "SIPS", 1935: "RTMP"
+tcp_service_ports = {
+    20: "FTP-DATA",
+    21: "FTP-CONTROL",
+    22: "SSH",
+    23: "TELNET",
+    25: "SMTP",
+    80: "HTTP",
+    110: "POP3",
+    113: "IDENT",
+    119: "NNTP",
+    143: "IMAP",
+    179: "BGP",
+    389: "LDAP",
+    443: "HTTPS/TLS",
+    445: "MICROSOFT-DS (SMB)",
+    636: "LDAPS",
+    873: "RSYNC",
+    993: "IMAPS",
+    995: "POP3S",
+    1433: "MSSQL",
+    1723: "PPTP",
+    3306: "MYSQL",
+    3389: "RDP",
+    5432: "POSTGRESQL",
+    5900: "VNC",
+    8080: "HTTP-PROXY"
+}
+
+# UDP-SPECIFIC SERVICE PORTS
+udp_service_ports = {
+    53: "DNS",
+    67: "DHCP-SERVER",
+    68: "DHCP-CLIENT",
+    69: "TFTP",
+    123: "NTP",
+    161: "SNMP",
+    162: "SNMP-TRAP",
+    443: "QUIC",
+    500: "ISAKMP (VPN)",
+    514: "SYSLOG",
+    631: "IPP (PRINTING)",
+    1194: "OPENVPN",
+    1812: "RADIUS-AUTH",
+    1813: "RADIUS-ACCT",
+    1900: "SSDP",
+    3478: "STUN",
+    4500: "IPSEC-NAT-T",
+    5060: "SIP",
+    5353: "MDNS",
+    5683: "COAP"
 }
