@@ -14,6 +14,8 @@ def get_protocol(protocol_num, src_port, dst_port):
         protocol = service_ports.get(dst_port, service_ports.get(src_port, "UDP"))
     elif protocol == "ARP":
         return protocol
+    elif protocol == "ICMPV6":
+        return protocol
     else:
         protocol = protocol_nums.get(protocol, "UNKNOWN")
         
