@@ -78,10 +78,10 @@ class DnsTunnel:
         except Exception:
             return ""
     
-def detect_dns_tunnel(packet_queue, stop_event):
+def detect_dns_tunnel(packet_queue, stop_event, cli_ready):
     detector = DnsTunnel(packet_queue)
     
-    while not stop_event.is_set():
+    while not stop_event.is_set() and cli_ready.is_set():
         packet = packet_queue.get()
         try:
             detector.process_packet(packet)

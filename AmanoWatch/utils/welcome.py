@@ -1,6 +1,6 @@
-def welcome():
+def welcome(device):
     print(" " + "═"*85)
-    print("  AmanoWatch Command Line | INTRUSTION DETECTION SYSTEM STATUS: \033[92mACTIVE\033[0m")
+    print(f"  DEVICE: {device} | INTRUSTION DETECTION SYSTEM STATUS: \033[92mACTIVE\033[0m")
     print(" " + "═"*85)
 
     print("\n\033[1mAVAILABLE COMMANDS:\033[0m")

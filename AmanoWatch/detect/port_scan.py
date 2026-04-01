@@ -97,11 +97,11 @@ class PortScan:
             (t, p, f) for (t, p, f) in self.activity[src_ip] if t >= cutoff
         ]
 
-def detect_port_scan(packet_queue, interval, quantity, cooldown, stop_event):
+def detect_port_scan(packet_queue, interval, quantity, cooldown, stop_event, cli_ready):
     """Thread entry point for scan detection."""
     detector = PortScan(packet_queue, interval, quantity, cooldown)
 
-    while not stop_event.is_set():
+    while not stop_event.is_set() and cli_ready.is_set():
         unblock_ip()  # unblock IPs periodically
         packet: PyPacket = packet_queue.get()
         try:

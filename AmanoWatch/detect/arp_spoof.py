@@ -34,10 +34,10 @@ class ArpSpoof:
         message += f"Blocking {new_mac} for 300 seconds\n" + "-"*50
         report_to_webhook("ARP Spoof", message)
         
-def detect_arp_spoof(packet_queue, cooldown, stop_event):
+def detect_arp_spoof(packet_queue, cooldown, stop_event, cli_ready):
     detector = ArpSpoof(packet_queue, cooldown)
     
-    while not stop_event.is_set():
+    while not stop_event.is_set() and cli_ready.is_set():
         unblock_mac()
         packet = packet_queue.get()
         try:

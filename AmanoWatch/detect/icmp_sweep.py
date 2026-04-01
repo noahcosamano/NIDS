@@ -4,13 +4,13 @@ from network.get_gateway import get_gateway
 from queue import Queue
 import time
 
-def detect_sweep(packet_queue: Queue, interval, quantity, cooldown, stop_event):
+def detect_sweep(packet_queue: Queue, interval, quantity, cooldown, stop_event, cli_ready):
     message = ""
     gateway = get_gateway()
     last_alert = {}
     activity = {}
     
-    while not stop_event.is_set(): 
+    while not stop_event.is_set() and cli_ready.is_set(): 
         unblock_ip()
         packet: PyPacket = packet_queue.get()
         

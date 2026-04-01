@@ -17,7 +17,7 @@ def convert_to_pypacket(protocol, type, flags, src_mac, dst_mac, src_ip, dst_ip,
     
     return pypacket
 
-def begin_capture(device, packet_queues: list[Queue[PyPacket]], stop_event):
+def begin_capture(device, packet_queues: list[Queue[PyPacket]], stop_event, cli_ready):
     PCAP_ERRBUF_SIZE = 256 # Size of buffer in bytes
     # This is the error buffer passed into InitCapture in dll so python can see error messages
     errbuf = ctypes.create_string_buffer(PCAP_ERRBUF_SIZE)
@@ -45,7 +45,7 @@ def begin_capture(device, packet_queues: list[Queue[PyPacket]], stop_event):
     cpacket = CPacket()
 
     try:
-        while not stop_event.is_set():
+        while not stop_event.is_set() and cli_ready.is_set():
             # GetNextPacket called from capture.c in dll, return code stores as result
             result = lib.GetNextPacket(ctypes.byref(cpacket)) 
             

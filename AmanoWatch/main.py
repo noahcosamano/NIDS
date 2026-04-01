@@ -13,8 +13,11 @@ loopback = b'\\Device\\NPF_Loopback'
 pc_wifi = b"\\Device\\NPF_{194D9287-3B1B-4E06-B60E-5C6DE768B647}"
 wifi_laptop = b"\\Device\\NPF_{95DCD5E9-81B2-4BBB-BEC6-17C65D6ECD92}"
 
+shared_content = {}
+
 # Ends all threads when ctrl+c is pressed for debugging
-stop_event = threading.Event()                 
+stop_event = threading.Event()
+cli_ready_event = threading.Event()                 
   
 def main():
     cli_packet_queue = queue.Queue()
@@ -28,17 +31,23 @@ def main():
     # all thread names are for debugging
     cli_thread = threading.Thread(
         target=start_cli,
-        args=(cli_packet_queue, stop_event),
+        args=(cli_packet_queue, stop_event, cli_ready_event, shared_content),
         name="CLI",
         daemon=True
     )
+    
+    cli_thread.start()
+    cli_ready_event.wait()
+    device_path = shared_content["device_path"].encode("utf-8")
 
     # All packet queues are passed in so each event has its own queue to prevent race conditions
     capture_thread = threading.Thread(
         target=begin_capture,
         args=(
-            pc_wifi, [cli_packet_queue, fast_scan_packet_queue, slow_scan_packet_queue, 
-            sweep_packet_queue, arp_spoof_packet_queue, dns_tunnel_packet_queue], stop_event
+            device_path, 
+            [cli_packet_queue, fast_scan_packet_queue, slow_scan_packet_queue, 
+            sweep_packet_queue, arp_spoof_packet_queue, dns_tunnel_packet_queue], 
+            stop_event, cli_ready_event
         ),
         name="CAPTURE",
         daemon=True
@@ -47,7 +56,7 @@ def main():
     fast_scan_thread = threading.Thread(
         target=detect_port_scan,
         # queue, interval, quantity, cooldown, stop event
-        args=(fast_scan_packet_queue, 10, 20, 30, stop_event),
+        args=(fast_scan_packet_queue, 10, 20, 30, stop_event, cli_ready_event),
         name="FAST-SCAN",
         daemon=True
     )
@@ -55,7 +64,7 @@ def main():
     slow_scan_thread = threading.Thread(
         target=detect_port_scan,
         # queue, interval, quantity, cooldown, stop event
-        args=(slow_scan_packet_queue, 60, 50, 30, stop_event),
+        args=(slow_scan_packet_queue, 60, 50, 30, stop_event, cli_ready_event),
         name="SLOW-SCAN",
         daemon=True
     )
@@ -63,27 +72,26 @@ def main():
     sweep_thread = threading.Thread(
         target=detect_sweep,
         # queue, interval, quantity, cooldown, stop event
-        args=(sweep_packet_queue, 5, 10, 300, stop_event),
+        args=(sweep_packet_queue, 5, 10, 300, stop_event, cli_ready_event),
         name="SWEEP",
         daemon=True
     )
     
     arp_spoof_thread = threading.Thread(
         target=detect_arp_spoof,
-        args=(arp_spoof_packet_queue, 30, stop_event),
+        args=(arp_spoof_packet_queue, 30, stop_event, cli_ready_event),
         name="ARP SPOOF",
         daemon=True
     )
     
     dns_tunnel_thread = threading.Thread(
         target=detect_dns_tunnel,
-        args=(dns_tunnel_packet_queue, stop_event),
+        args=(dns_tunnel_packet_queue, stop_event, cli_ready_event),
         name="DNS TUNNEL",
         daemon=True
     )
 
     # Need to find a way to prevent so many threads being used, going to slow program
-    cli_thread.start()
     capture_thread.start()
     fast_scan_thread.start()
     slow_scan_thread.start()
