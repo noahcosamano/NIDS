@@ -124,6 +124,21 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
     // if (p->src_port == 5353 || p->dst_port == 5353) p->protocol = 207;
 }
 
+EXPORT int GetStats(struct pcap_stat* stats) {
+    // 1. Safety check: make sure the capture has actually started
+    if (global_handle == NULL) {
+        return -1;
+    }
+
+    // 2. pcap_stats is the built-in function that populates the struct
+    // It returns 0 on success, -1 on error
+    if (pcap_stats(global_handle, stats) < 0) {
+        return -2;
+    }
+
+    return 0;
+}
+
 // Exported Functions
 EXPORT char* GetDevices(char* device_errbuf) {
     pcap_if_t* alldevs;
@@ -157,12 +172,16 @@ EXPORT char* GetDevices(char* device_errbuf) {
 EXPORT int InitCapture(const char* device_name, char* errbuf) { // Device name passed in python call
                                                                 // I made errbuf also get passed in from python
                                                                 // so the python interface can see error messages
+    if (global_handle != NULL) {
+        pcap_close(global_handle);
+        global_handle = NULL;
+    }
     // device_name: device to capture traffic on
     // snaplen: size of handle to capture data (in bytes)
     // promiscuous mode: 1 enables promiscuous mode
     // to_ms: milliseconds until packet capture times out
     // errbuff: where error message is stored if handle fails to open
-    global_handle = pcap_open_live(device_name, 65536, 1, 1000, errbuf);
+    global_handle = pcap_open_live(device_name, 2 * 1024 * 1024, 1, 1000, errbuf);
     // Checks if global_handle opened successfully
     if (global_handle) {
         global_link_type = pcap_datalink(global_handle); // Link-layer header type e.g. loopback, ethernet, etc.

@@ -1,5 +1,5 @@
 from cli.verify import verify_target
-from cli.commands import view, devices
+from cli.commands import view, devices, stats
 from utils.ui_helpers import error
 
 def parse_wait(parts):
@@ -46,6 +46,13 @@ def parse_command(packet_queue, cmd: str, stop_event):
             error("'devices' takes no arguments")
             
         devices.execute(stop_event)
+        return
+    
+    if command == "stats":
+        if len(parts) > 1:
+            error("'stats' takes no arguments")
+            
+        stats.execute(stop_event)
         return
     
     error("Invalid command")

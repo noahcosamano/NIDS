@@ -12,6 +12,10 @@ def welcome(device):
     # Command: Devices
     print("\n  \033[94mdevices\033[0m")
     print("  └─ List available network interfaces.")
+    
+    # Command: stats
+    print("\n  \033[94mstats\033[0m")
+    print("  └─ List packet capture stats.")
 
     # Command: Exit
     print("\n  \033[91mexit\033[0m")
