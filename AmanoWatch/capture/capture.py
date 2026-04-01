@@ -32,8 +32,8 @@ def begin_capture(device, packet_queues: list[Queue[PyPacket]], stop_event, cli_
     lib.InitCapture.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
     lib.InitCapture.restype = ctypes.c_int
     
-    lib.GetNextPacket.argtypes = [ctypes.POINTER(CPacket)]
-    lib.GetNextPacket.restype = ctypes.c_int
+    lib.GetNextPacketCache.argtypes = [ctypes.POINTER(CPacket)]
+    lib.GetNextPacketCache.restype = ctypes.c_int
     
     lib.CloseCapture.argtypes = []
     lib.CloseCapture.restype = None
@@ -43,37 +43,41 @@ def begin_capture(device, packet_queues: list[Queue[PyPacket]], stop_event, cli_
         return
 
     cpacket = CPacket()
+    
+    packet_batch_size = 50
+    packet_array = (CPacket * packet_batch_size)()
 
     try:
         while not stop_event.is_set() and cli_ready.is_set():
             # GetNextPacket called from capture.c in dll, return code stores as result
-            result = lib.GetNextPacket(ctypes.byref(cpacket)) 
+            count = lib.GetNextPacketCache(packet_array) 
             
-            if result == 1: # Success, so fill packet
-                src_ip = format_ip(cpacket.src_ip, cpacket.is_ipv6)
-                dst_ip = format_ip(cpacket.dst_ip, cpacket.is_ipv6)
-                flags = format_flags(cpacket.tcp_flags)
-                src_mac = format_mac(cpacket.src_mac)
-                dst_mac = format_mac(cpacket.dst_mac)
-                protocol = parse_protocol(cpacket.protocol, cpacket.src_port, cpacket.dst_port)
-                raw_payload = None
+            if count > 0:
+                for i in range(count):
+                    cpacket = packet_array[i]
+                    
+                    src_ip = format_ip(cpacket.src_ip, cpacket.is_ipv6)
+                    dst_ip = format_ip(cpacket.dst_ip, cpacket.is_ipv6)
+                    flags = format_flags(cpacket.tcp_flags)
+                    src_mac = format_mac(cpacket.src_mac)
+                    dst_mac = format_mac(cpacket.dst_mac)
+                    protocol = parse_protocol(cpacket.protocol, cpacket.src_port, cpacket.dst_port)
+                    raw_payload = None
+                    
+                    try:
+                        if cpacket.payload_len > 0:
+                            raw_payload = ctypes.string_at(cpacket.payload, cpacket.payload_len)
+                    except Exception as e:
+                        error(f"Failed to read payload: {e}")
                 
-                try:
-                    if cpacket.payload_len > 0:
-                        raw_payload = ctypes.string_at(cpacket.payload, cpacket.payload_len)
-                except Exception as e:
-                    error(f"Failed to read payload: {e}")
-            
-                pypacket = convert_to_pypacket(protocol, cpacket.type, flags, src_mac, 
-                                               dst_mac,src_ip, dst_ip, cpacket.src_port,
-                                               cpacket.dst_port, raw_payload, cpacket.tv_sec)
+                    pypacket = convert_to_pypacket(protocol, cpacket.type, flags, src_mac, 
+                                                dst_mac,src_ip, dst_ip, cpacket.src_port,
+                                                cpacket.dst_port, raw_payload, cpacket.tv_sec)
                 
-                for q in packet_queues:
-                    q.put(pypacket)
+                    for q in packet_queues:
+                        q.put(pypacket)
 
-            elif result == 0: # Failure, just continue looping
-                continue
-            else: # Abnormal failure, tell the user and close capture
+            elif count < 0: # Abnormal failure, tell the user and close capture
                 error(errbuf)
                 break
 

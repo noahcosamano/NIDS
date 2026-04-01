@@ -7,10 +7,17 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
+// NOTE: memcpy is scattered throughout program, this is costly so I 
+// intend on changing it to something more time efficient
+
+// Tells the program that anything starting with 'EXPORT' can be used externally
 #define EXPORT __declspec(dllexport)
 
+// Packet capture handle
 static pcap_t* global_handle = NULL;
+// Initializes global link
 static int global_link_type = 0;
+// Just so the program knows the size of buffer
 static char device_list_buffer[4096];
 
 // header: Initial packet header
@@ -118,10 +125,6 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
         p->payload_len = (header->caplen > (uint32_t)(transport_offset + 8)) ?
             header->caplen - (transport_offset + 8) : 0;
     }
-
-    // DNS / mDNS Logic * NOTE: Changed so python now does this
-    // if (p->src_port == 53 || p->dst_port == 53) p->protocol = 206;
-    // if (p->src_port == 5353 || p->dst_port == 5353) p->protocol = 207;
 }
 
 EXPORT int GetStats(struct pcap_stat* stats) {
@@ -191,17 +194,23 @@ EXPORT int InitCapture(const char* device_name, char* errbuf) { // Device name p
     return 0;
 }
 
-EXPORT int GetNextPacket(packet* packet) { // Packet passed in by python call
+EXPORT int GetNextPacketCache(packet* packetCache) { // Packet cache passed in by python call
     if (!global_handle) return -1; // Double-checks if global handle exists
-    struct pcap_pkthdr* header; // Initializes empty packet header
-    const u_char* pkt_data; // Initializes empty packet data    
-    int result = pcap_next_ex(global_handle, &header, &pkt_data); // Gets next packet, fills header and pkt_data
-                                                                  // and returns 1 if success, 0 if failure
-    if (result == 1) { // Success
-        ProcessRawData(header, pkt_data, packet);
-        return 1;
+    
+    int count = 0;
+    while (count < 50) {
+        struct pcap_pkthdr* header; // Initializes empty packet header
+        const u_char* pkt_data; // Initializes empty packet data    
+        int result = pcap_next_ex(global_handle, &header, &pkt_data); // Gets next packet, fills header and pkt_data
+        // and returns 1 if success, 0 if failure
+        if (result == 1) { // Success
+            ProcessRawData(header, pkt_data, &packetCache[count]);
+            count++;
+        } else {
+            return result;
+        }
     }
-    return result; // To tell python if packet was captured successfully
+    return count;
 }
 
 EXPORT void CloseCapture() { // When python program closes, CloseCapture is called
