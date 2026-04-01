@@ -112,5 +112,8 @@ def main():
         # Join gives threads a small window to finish current process to ensure cleanup
         capture_thread.join(timeout=1)
         fast_scan_thread.join(timeout=1)
+        slow_scan_thread.join(timeout=1)
+        sweep_thread.join(timeout=1)
+        arp_spoof_thread.join(timeout=1)
 
 main()
