@@ -158,17 +158,20 @@ class CaptureBridge(QObject):
                     self._on_packet(pkt)
                 except queue.Empty:
                     continue
+                
+        def _emit_alert(severity, title, detail):
+            self.alert_fired.emit(severity, title, detail)
 
         def _fast_scan():
-            detect_port_scan(fast_q, 10, 20, 30, self.stop_event, ready)
+            detect_port_scan(fast_q, 10, 20, 30, self.stop_event, ready, alert_callback=_emit_alert)
         def _slow_scan():
-            detect_port_scan(slow_q, 60, 50, 30, self.stop_event, ready)
+            detect_port_scan(slow_q, 60, 50, 30, self.stop_event, ready, alert_callback=_emit_alert)
         def _sweep():
             detect_sweep(sweep_q, 5, 10, 300, self.stop_event, ready)
         def _arp():
-            detect_arp_spoof(arp_q, 30, self.stop_event, ready)
+            detect_arp_spoof(arp_q, 30, self.stop_event, ready, alert_callback=_emit_alert)
         def _dns():
-            detect_dns_tunnel(dns_q, self.stop_event, ready)
+            detect_dns_tunnel(dns_q, self.stop_event, ready, alert_callback=_emit_alert)
 
         targets = [_capture, lambda: _drain(cli_q), _fast_scan, _slow_scan, _sweep, _arp, _dns]
         for fn in targets:

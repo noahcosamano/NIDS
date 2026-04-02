@@ -97,7 +97,7 @@ def main():
     slow_scan_thread.start()
     sweep_thread.start()
     arp_spoof_thread.start()
-    #dns_tunnel_thread.start()
+    dns_tunnel_thread.start()
     
     try:
         while cli_thread.is_alive():
@@ -115,5 +115,6 @@ def main():
         slow_scan_thread.join(timeout=1)
         sweep_thread.join(timeout=1)
         arp_spoof_thread.join(timeout=1)
+        dns_tunnel_thread.join(timeout=1)
 
 main()

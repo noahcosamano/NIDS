@@ -15,8 +15,9 @@ WHITELIST = {
 }
 
 class DnsTunnel:
-    def __init__(self, packet_queue):
+    def __init__(self, packet_queue, alert_callback=None):
         self.packet_queue = packet_queue
+        self.alert_callback = alert_callback
     
     def process_packet(self, packet: PyPacket):
         if packet.protocol != "DNS" or not packet.query:
@@ -41,6 +42,10 @@ class DnsTunnel:
                 f"Blocking {packet.src_ip} for 300 seconds\n"
             )
             report_to_webhook("DNS Tunnel", message)
+            if self.alert_callback:
+                self.alert_callback("warning", "DNS TUNNELING", f"High-entropy domain from {packet.src_ip}: \
+                                    {domain_name} (entropy={entropy:.2f})")
+            
         
     def string_entropy(self, payload):
         if not payload:
@@ -78,8 +83,8 @@ class DnsTunnel:
         except Exception:
             return ""
     
-def detect_dns_tunnel(packet_queue, stop_event, cli_ready):
-    detector = DnsTunnel(packet_queue)
+def detect_dns_tunnel(packet_queue, stop_event, cli_ready, alert_callback=None):
+    detector = DnsTunnel(packet_queue, alert_callback=alert_callback)
     
     while not stop_event.is_set() and cli_ready.is_set():
         packet = packet_queue.get()
