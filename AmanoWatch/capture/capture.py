@@ -22,7 +22,7 @@ def begin_capture(device, packet_queues: list[Queue[PyPacket]], stop_event, cli_
     # This is the error buffer passed into InitCapture in dll so python can see error messages
     errbuf = ctypes.create_string_buffer(PCAP_ERRBUF_SIZE)
     
-    dll_path = get_dll_path()
+    dll_path = get_dll_path("capture.dll")
     try:
         lib = ctypes.CDLL(dll_path, errbuf)
     except OSError as e:
@@ -61,7 +61,6 @@ def begin_capture(device, packet_queues: list[Queue[PyPacket]], stop_event, cli_
                     flags = format_flags(cpacket.tcp_flags)
                     src_mac = format_mac(cpacket.src_mac)
                     dst_mac = format_mac(cpacket.dst_mac)
-                    protocol = parse_protocol(cpacket.protocol, cpacket.src_port, cpacket.dst_port)
                     raw_payload = None
                     
                     try:
@@ -69,6 +68,8 @@ def begin_capture(device, packet_queues: list[Queue[PyPacket]], stop_event, cli_
                             raw_payload = ctypes.string_at(cpacket.payload, cpacket.payload_len)
                     except Exception as e:
                         error(f"Failed to read payload: {e}")
+                        
+                    protocol = parse_protocol(cpacket.protocol, cpacket.app_protocol)
                 
                     pypacket = convert_to_pypacket(protocol, cpacket.type, flags, src_mac, 
                                                 dst_mac,src_ip, dst_ip, cpacket.src_port,

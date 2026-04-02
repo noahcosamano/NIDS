@@ -6,7 +6,7 @@ def get_devices():
     PCAP_ERRBUF_SIZE = 256
     errbuf = ctypes.create_string_buffer(PCAP_ERRBUF_SIZE)
     
-    dll_path = get_dll_path()
+    dll_path = get_dll_path("capture.dll")
     try:
         lib = ctypes.CDLL(dll_path)
     except OSError:

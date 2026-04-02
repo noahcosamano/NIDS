@@ -1,11 +1,10 @@
-from capture.config.config import protocol_nums, udp_service_ports, tcp_service_ports
+from capture.config.config import protocol_nums, tcp_service_ports, udp_service_ports
 
 def verify_target(arg: str):
     """Validate protocol or port."""
     arg = arg.upper()
 
-    if arg in protocol_nums.values() or arg == "ALL" or arg in \
-    udp_service_ports.values() or arg in tcp_service_ports.values():
+    if arg in protocol_nums.values() or arg == "ALL" or arg in tcp_service_ports.values() or arg in udp_service_ports.values():
         return arg
 
     if arg.isdigit():

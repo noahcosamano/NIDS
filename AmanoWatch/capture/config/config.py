@@ -26,10 +26,23 @@ protocol_nums = {
     128: "SSCOPMCE", 129: "IPLT", 130: "SPS", 131: "PIPE", 132: "SCTP", 
     133: "FC", 134: "RSVP-E2E-IGNORE", 135: "MOBILITY HEADER", 136: "UDPLITE", 
     137: "MPLS-IN-IP", 138: "MANET", 139: "HIP", 140: "SHIM6", 141: "WESP", 
-    142: "ROHC", 143: "ETHERNET", 205: "ARP", 206: "DNS", 207: "MDNS"
+    142: "ROHC", 143: "ETHERNET", 205: "ARP"
 }
 
-# Updated service ports (all uppercase)
+# Defined in inspect.h
+tcp_service_ports = {
+    206: "DNS",
+    207: "MDNS",
+    208: "TLS",
+}
+
+udp_service_ports = {
+    206: "DNS",
+    207: "MDNS",
+    209: "QUIC",
+}
+
+"""# Updated service ports (all uppercase)
 tcp_service_ports = {
     20: "FTP-DATA",
     21: "FTP-CONTROL",
@@ -80,4 +93,4 @@ udp_service_ports = {
     5060: "SIP",
     5353: "MDNS",
     5683: "COAP"
-}
+}"""

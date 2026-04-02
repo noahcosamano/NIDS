@@ -1,4 +1,4 @@
-from capture.config.config import udp_service_ports, tcp_service_ports
+from capture.config.config import tcp_service_ports, udp_service_ports
 from capture.classes.PyPacket import PyPacket
 from utils.ui_helpers import clear
 from queue import Empty
