@@ -20,7 +20,7 @@ stop_event = threading.Event()
 cli_ready_event = threading.Event()                 
   
 def main():
-    cli_packet_queue = queue.Queue()
+    cli_packet_queue = queue.Queue() 
     fast_scan_packet_queue = queue.Queue()
     slow_scan_packet_queue = queue.Queue()
     arp_spoof_packet_queue = queue.Queue()
@@ -115,5 +115,6 @@ def main():
         slow_scan_thread.join(timeout=1)
         sweep_thread.join(timeout=1)
         arp_spoof_thread.join(timeout=1)
+        #dns_tunnel_thread.join(timeout=1)
 
 main()

@@ -6,7 +6,7 @@ from log.log import report_to_webhook
 import time
 
 class PortScan:
-    def __init__(self, packet_queue, interval, quantity, cooldown):
+    def __init__(self, packet_queue, interval, quantity, cooldown, alert_callback=None):
         self.packet_queue = packet_queue
         self.interval = interval          # seconds to track packets
         self.quantity = quantity          # unique ports threshold
@@ -14,6 +14,7 @@ class PortScan:
         self.gateway = get_gateway()
         self.last_alert = {}              # src_ip -> last alert time
         self.activity = {}                # src_ip -> list of (timestamp, dst_port, flags)
+        self.alert_callback = alert_callback
 
     def process_packet(self, packet: PyPacket):
         """Process a single packet for scan detection."""
@@ -92,14 +93,18 @@ class PortScan:
         message += f"Blocking {src_ip} for 300 seconds\n"
         report_to_webhook(scan_type, message)
         
+        if self.alert_callback:
+            unique_ports = len({p for _, p, _ in self.activity.get(src_ip, [])})
+            self.alert_callback("critical", scan_type.upper(), f"{scan_type} across {unique_ports} ports from {src_ip}")
+        
         cutoff = time.time() - self.interval
         self.activity[src_ip] = [
             (t, p, f) for (t, p, f) in self.activity[src_ip] if t >= cutoff
         ]
 
-def detect_port_scan(packet_queue, interval, quantity, cooldown, stop_event, cli_ready):
+def detect_port_scan(packet_queue, interval, quantity, cooldown, stop_event, cli_ready, alert_callback=None):
     """Thread entry point for scan detection."""
-    detector = PortScan(packet_queue, interval, quantity, cooldown)
+    detector = PortScan(packet_queue, interval, quantity, cooldown, alert_callback=alert_callback)
 
     while not stop_event.is_set() and cli_ready.is_set():
         unblock_ip()  # unblock IPs periodically
