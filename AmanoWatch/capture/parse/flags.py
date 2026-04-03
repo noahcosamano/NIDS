@@ -1,5 +1,5 @@
 def format_flags(flags_num):
-    """Converts TCP flag byte to string (e.g., 'SYN ACK')"""
+    # Converts TCP flag byte to string (e.g., 'SYN ACK')
     # Standard TCP Flag bits
     res = []
     if flags_num & 0x01: res.append("FIN")

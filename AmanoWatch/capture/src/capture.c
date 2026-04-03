@@ -38,9 +38,9 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
 
     if (global_link_type == DLT_EN10MB) { // Ethernet
         // Get ethernet header
-        struct eth_header* eth = (struct eth_header*)(pkt_data); 
+        struct eth_header* eth = (struct eth_header*)(pkt_data);
         eth_type = ntohs(eth->type); // Converts ethernet type from big endian to little endian
-                                     // (Network Byte Order -> Host Byte Order)
+        // (Network Byte Order -> Host Byte Order)
         offset = 14; // Eth header is 14 bytes
 
         if (eth_type == 0x8100) { // VLAN tag
@@ -118,6 +118,7 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
         p->payload_len = (header->caplen > (uint32_t)(transport_offset + tcp_len)) ?
             header->caplen - (transport_offset + tcp_len) : 0;
 
+        // The functions below take a TCP packet and inspect payload to check for application protocol
         if (IsTLS(p)) {}
         else if (IsDNS(p)) {}
         else if (IsTELNET(p)) {}
@@ -138,6 +139,7 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
         p->payload_len = (header->caplen > (uint32_t)(transport_offset + 8)) ?
             header->caplen - (transport_offset + 8) : 0;
 
+        // The functions below take a UDP packet and inspect payload to check for application protocol
         if (IsQUIC(p)) {}
         else if (IsDNS(p)) {}
         else if (IsTFTP(p)) {}
@@ -147,7 +149,7 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
     }
 }
 
-EXPORT int GetStats(struct pcap_stat* stats) {
+EXPORT int GetStats(struct pcap_stat* stats) { // Gets stats of packet capture e.g. packets captured, packet loss, etc.
     // 1. Safety check: make sure the capture has actually started
     if (global_handle == NULL) {
         return -1;
@@ -163,14 +165,14 @@ EXPORT int GetStats(struct pcap_stat* stats) {
 }
 
 // Exported Functions
-EXPORT char* GetDevices(char* device_errbuf) {
-    pcap_if_t* alldevs;
+EXPORT char* GetDevices(char* device_errbuf) { // 'device_errbuf' stores error message if system fails to get devices
+    pcap_if_t* alldevs; // Stores all devices on the system
     pcap_if_t* d;
 
     // Clear the buffer
-    memset(device_list_buffer, 0, sizeof(device_list_buffer));
+    memset(device_list_buffer, 0, sizeof(device_list_buffer)); // Resets device buffer memory
 
-    if (pcap_findalldevs(&alldevs, device_errbuf) == -1) {
+    if (pcap_findalldevs(&alldevs, device_errbuf) == -1) { // Returns -1 if failed
         return "ERROR";
     }
 
@@ -189,26 +191,22 @@ EXPORT char* GetDevices(char* device_errbuf) {
     }
 
     pcap_freealldevs(alldevs);
-    return device_list_buffer;
+    return device_list_buffer; // Returns character array that contains the name of all devices
 }
 
 EXPORT int InitCapture(const char* device_name, char* errbuf) { // Device name passed in python call
-                                                                // I made errbuf also get passed in from python
-                                                                // so the python interface can see error messages
+    // I made errbuf also get passed in from python
+    // so the python interface can see error messages
     if (global_handle != NULL) {
         pcap_close(global_handle);
         global_handle = NULL;
     }
-    // device_name: device to capture traffic on
-    // snaplen: size of handle to capture data (in bytes)
-    // promiscuous mode: 1 enables promiscuous mode
-    // to_ms: milliseconds until packet capture times out
-    // errbuff: where error message is stored if handle fails to open
+
     global_handle = pcap_create(device_name, errbuf);
-    pcap_set_snaplen(global_handle, 65535);
-    pcap_set_promisc(global_handle, 1);
-    pcap_set_timeout(global_handle, 1000);
-    pcap_set_buffer_size(global_handle, 32 * 1024 * 1024); // 32MB buffer
+    pcap_set_snaplen(global_handle, 65535); // The max length of each capture
+    pcap_set_promisc(global_handle, 1); // 1 enables promiscuous mode, 0 disables it
+    pcap_set_timeout(global_handle, 1000); // 1000 ms timeout on packet
+    pcap_set_buffer_size(global_handle, 64 * 1024 * 1024); // 64MB buffer
     pcap_activate(global_handle);
     // Checks if global_handle opened successfully
     if (global_handle) {
@@ -221,7 +219,7 @@ EXPORT int InitCapture(const char* device_name, char* errbuf) { // Device name p
 
 EXPORT int GetNextPacketCache(packet* packetCache) { // Packet cache passed in by python call
     if (!global_handle) return -1; // Double-checks if global handle exists
-    
+
     int count = 0;
     while (count < 50) {
         struct pcap_pkthdr* header; // Initializes empty packet header
@@ -231,7 +229,8 @@ EXPORT int GetNextPacketCache(packet* packetCache) { // Packet cache passed in b
         if (result == 1) { // Success
             ProcessRawData(header, pkt_data, &packetCache[count]);
             count++;
-        } else {
+        }
+        else {
             return result;
         }
     }
