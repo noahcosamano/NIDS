@@ -2,11 +2,15 @@ from network.get_devices import get_devices
 from utils.ui_helpers import error, clear
 
 def select_device():
+    '''
+    Used to select a network interface to capture on. Devices 
+    are selected based on the index assigned to them.
+    '''
     clear()
     devices: str = get_devices()
     device_indices = dict()
     
-    if not devices:
+    if not devices: # Usually due to the dll failing to load
         clear()
         error("No devices found")
         return

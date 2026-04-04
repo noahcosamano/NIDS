@@ -9,6 +9,8 @@ from utils.ui_helpers import error
 from queue import Queue
 import ctypes
 
+# I don't think this function is necessary, in the future I intend on scrapping PyPackets entirely
+# because it's a lot of overhead time for the system
 def convert_to_pypacket(protocol, type, flags, src_mac, dst_mac, src_ip, dst_ip,
                         src_port, dst_port, query, timestamp):
     
@@ -22,6 +24,7 @@ def begin_capture(device, packet_queues: list[Queue[PyPacket]], stop_event, cli_
     # This is the error buffer passed into InitCapture in dll so python can see error messages
     errbuf = ctypes.create_string_buffer(PCAP_ERRBUF_SIZE)
     
+    # I should make this part of the get_dll_path function since it's repeated in many modules
     dll_path = get_dll_path("capture.dll")
     try:
         lib = ctypes.CDLL(dll_path, errbuf)
@@ -29,7 +32,9 @@ def begin_capture(device, packet_queues: list[Queue[PyPacket]], stop_event, cli_
         error(f"DLL not found at {dll_path}")
         return
 
+    # Defines C argument types for each function
     lib.InitCapture.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+    # Defines C return types for each function
     lib.InitCapture.restype = ctypes.c_int
     
     lib.GetNextPacketCache.argtypes = [ctypes.POINTER(CPacket)]
@@ -38,19 +43,20 @@ def begin_capture(device, packet_queues: list[Queue[PyPacket]], stop_event, cli_
     lib.CloseCapture.argtypes = []
     lib.CloseCapture.restype = None
 
+    # Attempt to open capture handle from C.
     if not lib.InitCapture(device, errbuf):
         error(errbuf)
         return
 
     cpacket = CPacket()
     
-    packet_batch_size = 50
+    packet_batch_size = 20 # Rather than bouncing back and forth with each packet captured, C sends 50 packets at a time to python
     packet_array = (CPacket * packet_batch_size)()
 
     try:
         while not stop_event.is_set() and cli_ready.is_set():
             # GetNextPacket called from capture.c in dll, return code stores as result
-            count = lib.GetNextPacketCache(packet_array) 
+            count = lib.GetNextPacketCache(packet_array) # Amount of packets in the cache returned by capture.c
             
             if count > 0:
                 for i in range(count):
@@ -68,14 +74,16 @@ def begin_capture(device, packet_queues: list[Queue[PyPacket]], stop_event, cli_
                             raw_payload = ctypes.string_at(cpacket.payload, cpacket.payload_len)
                     except Exception as e:
                         error(f"Failed to read payload: {e}")
-                        
+                    
+                    # Protocol has to be assigned last since fields like payload are used in defining protocol
                     protocol = parse_protocol(cpacket.protocol, cpacket.app_protocol)
                 
                     pypacket = convert_to_pypacket(protocol, cpacket.type, flags, src_mac, 
                                                 dst_mac,src_ip, dst_ip, cpacket.src_port,
                                                 cpacket.dst_port, raw_payload, cpacket.tv_sec)
                 
-                    for q in packet_queues:
+                    for q in packet_queues: # Puts the same exact packet in all queues passed in
+                                            # I intend on sorting packets to determine which q to put them in
                         q.put(pypacket)
 
             elif count < 0: # Abnormal failure, tell the user and close capture

@@ -23,14 +23,14 @@ def parse_wait(parts):
 
 # Command helper
 def parse_command(packet_queue, cmd: str, stop_event):
-    parts = cmd.strip().split()
+    parts = cmd.strip().split() # Splits command on spaces and puts each token in a list
 
     if not parts:
         raise ValueError("empty command")
 
-    command = parts[0].lower()
+    command = parts[0].lower() # Main command e.g. 'view', 'devices', etc.
 
-    if command == "view":
+    if command == "view": # Filter and view protocol
         if len(parts) < 2:
             error("'view' requires a protocol or port")
         
@@ -41,14 +41,14 @@ def parse_command(packet_queue, cmd: str, stop_event):
         view.execute(packet_queue, target, wait_ms, stop_event)
         return
     
-    if command == "devices":
+    if command == "devices": # View all network devices on computer
         if len(parts) > 1:
             error("'devices' takes no arguments")
             
         devices.execute(stop_event)
         return
     
-    if command == "stats":
+    if command == "stats": # View network capture statistic such as packet loss
         if len(parts) > 1:
             error("'stats' takes no arguments")
             

@@ -13,10 +13,10 @@ def start_cli(packet_queue: Queue, system_stop_event, cli_ready_event, shared_co
     # Create new stop event for breaking packet stream on keyboard input
     stop_event = threading.Event()
     
-    while not cli_ready_event.is_set():
+    while not cli_ready_event.is_set(): # Prompts the user to enter a device index until valid one is chosen
         device_path, device_name = select_device()
         cli_ready_event.set()
-        shared_content["device_path"] = device_path
+        shared_content["device_path"] = device_path # Keeps device path in shared_content so main can access it when creating capture handle
         shared_content["device_name"] = device_name
     
     try:
@@ -31,7 +31,8 @@ def start_cli(packet_queue: Queue, system_stop_event, cli_ready_event, shared_co
                 break
 
             try:
-                parsed = parse_command(packet_queue, cmd, stop_event)
+                # Parse command handles and executes imput right from function, does not return input
+                parse_command(packet_queue, cmd, stop_event)
             except ValueError as e:
                 error(str(e))
                 continue

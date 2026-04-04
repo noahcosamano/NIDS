@@ -17,6 +17,8 @@ def execute(packet_queue, target, wait_ms, stop_event):
         clear()
         print(f"\nListening on port {target} (delay={wait_ms}ms)...")
         view_port(packet_queue, target, stop_event, wait_ms)
+        
+# NOTE: The two functions below need to be combined into one
 
 # Function called if a protocol is passed into "view"
 def view_proto(packet_queue, proto, stop_event, wait_ms: int):
