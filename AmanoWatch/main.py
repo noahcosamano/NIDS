@@ -49,6 +49,7 @@ def main():
     cli_thread.start() # CLI thread is started first so user can decide which device to capture on
     cli_ready_event.wait() # Wait for the event to be set, this means user has selected device
     device_path = shared_content["device_path"].encode("utf-8") # e.g. "\Device\NPF_Loopback"
+    device_name = shared_content["device_name"]
 
     capture_thread = threading.Thread(
         target=begin_capture,
@@ -65,7 +66,7 @@ def main():
     fast_scan_thread = threading.Thread( # Detects fast port scan (20 hits in 10 seconds)
         target=detect_port_scan,
         # queue, interval, quantity, cooldown, stop event
-        args=(fast_scan_packet_queue, 10, 20, 30, stop_event, cli_ready_event),
+        args=(device_name, fast_scan_packet_queue, 10, 20, 30, stop_event, cli_ready_event),
         name="FAST-SCAN",
         daemon=True
     )
@@ -75,7 +76,7 @@ def main():
     slow_scan_thread = threading.Thread( # Detects slow port scan (50 hits in 60 seconds
         target=detect_port_scan,
         # queue, interval, quantity, cooldown, stop event, cli ready event
-        args=(slow_scan_packet_queue, 60, 50, 30, stop_event, cli_ready_event),
+        args=(device_name, slow_scan_packet_queue, 60, 50, 30, stop_event, cli_ready_event),
         name="SLOW-SCAN",
         daemon=True
     )

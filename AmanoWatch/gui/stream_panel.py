@@ -72,7 +72,7 @@ class PacketDetailDialog(QDialog):
 
         query = getattr(pkt, 'query', None)
         if query:
-            try:    qstr = query.decode('utf-8', errors='replace')
+            try:    qstr = ' '.join(f'{b:02X}' for b in query)
             except: qstr = repr(query)
             layout.addWidget(row("PAYLOAD", qstr, GREEN))
 

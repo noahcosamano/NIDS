@@ -1,17 +1,19 @@
 from capture.classes import PyPacket
 from network.block_ip import block_ip, unblock_ip
 from network.get_gateway import get_gateway
+from network.get_ip import get_ip
 from detect.config import flag_to_name
 from log.log import report_to_webhook
 import time
 
 class PortScan:
-    def __init__(self, packet_queue, interval, quantity, cooldown, alert_callback=None):
+    def __init__(self, device, packet_queue, interval, quantity, cooldown, alert_callback=None):
         self.packet_queue = packet_queue
         self.interval = interval
         self.quantity = quantity
         self.cooldown = cooldown
         self.gateway = get_gateway()
+        self.ip = get_ip(device)
         self.last_alert = {}   # src_ip -> {flag: last_alert_time}
         self.activity = {}     # src_ip -> list of (timestamp, dst_port)
         self.num_flags = {}    # src_ip -> {flag: count}
@@ -92,8 +94,8 @@ class PortScan:
         self.activity[src_ip] = [(t, p) for t, p in self.activity[src_ip] if t >= cutoff]
 
 
-def detect_port_scan(packet_queue, interval, quantity, cooldown, stop_event, cli_ready, alert_callback=None):
-    detector = PortScan(packet_queue, interval, quantity, cooldown, alert_callback=alert_callback)
+def detect_port_scan(device, packet_queue, interval, quantity, cooldown, stop_event, cli_ready, alert_callback=None):
+    detector = PortScan(device, packet_queue, interval, quantity, cooldown, alert_callback=alert_callback)
 
     while not stop_event.is_set() and cli_ready.is_set():
         unblock_ip()
