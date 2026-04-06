@@ -1,4 +1,4 @@
-from capture.classes import PyPacket
+from capture.classes.PyPacket import PyPacket
 from network.block_ip import block_ip, unblock_ip
 from network.get_gateway import get_gateway
 from network.get_ip import get_ip
@@ -13,7 +13,7 @@ class PortScan:
         self.quantity = quantity
         self.cooldown = cooldown
         self.gateway = get_gateway()
-        self.ip = get_ip(device)
+        self.host_ip = get_ip(device)
         self.last_alert = {}   # src_ip -> {flag: last_alert_time}
         self.activity = {}     # src_ip -> list of (timestamp, dst_port)
         self.num_flags = {}    # src_ip -> {flag: count}
@@ -33,6 +33,9 @@ class PortScan:
 
         if dst_port >= 1024:
             return
+        
+        if self.host_ip and self.host_ip.replace("(Preferred)", "").strip() == src_ip:
+            ...
 
         if src_ip not in self.activity:
             self.activity[src_ip]   = []
@@ -86,7 +89,7 @@ class PortScan:
             unique_ports = len({p for _, p in self.activity.get(src_ip, [])})
             self.alert_callback(
                 "critical",
-                scan_type.upper(),
+                scan_type.upper() if scan_type else "unknown scan",
                 f"{scan_type} across {unique_ports} ports from {src_ip}"
             )
 

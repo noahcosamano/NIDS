@@ -19,7 +19,21 @@ def convert_to_pypacket(protocol, type, flags, src_mac, dst_mac, src_ip, dst_ip,
     
     return pypacket
 
-def begin_capture(device, packet_queues: list[Queue[PyPacket]], stop_event, cli_ready):
+def queue(arp_queue, dns_queue, fast_scan_queue, slow_scan_queue, icmp_queue, cli_queue, packet: PyPacket):
+    cli_queue.put(packet)
+    
+    if packet.protocol == "ARP":
+        arp_queue.put(packet)
+    elif packet.protocol in ("DNS", "MDNS"):
+        dns_queue.put(packet)
+    elif packet.protocol in ("TCP", "UDP"):
+        fast_scan_queue.put(packet)
+        slow_scan_queue.put(packet)
+    elif packet.protocol == "ICMP":
+        icmp_queue.put(packet)
+
+def begin_capture(device, arp_queue, dns_queue, fast_scan_queue, 
+                  slow_scan_queue, icmp_queue, cli_queue, stop_event, cli_ready):
     PCAP_ERRBUF_SIZE = 256 # Size of buffer in bytes
     # This is the error buffer passed into InitCapture in dll so python can see error messages
     errbuf = ctypes.create_string_buffer(PCAP_ERRBUF_SIZE)
@@ -82,9 +96,7 @@ def begin_capture(device, packet_queues: list[Queue[PyPacket]], stop_event, cli_
                                                 dst_mac,src_ip, dst_ip, cpacket.src_port,
                                                 cpacket.dst_port, raw_payload, cpacket.tv_sec)
                 
-                    for q in packet_queues: # Puts the same exact packet in all queues passed in
-                                            # I intend on sorting packets to determine which q to put them in
-                        q.put(pypacket)
+                    queue(arp_queue, dns_queue, fast_scan_queue, slow_scan_queue, icmp_queue, cli_queue, pypacket)
 
             elif count < 0: # Abnormal failure, tell the user and close capture
                 error(errbuf)

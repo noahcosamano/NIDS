@@ -16,6 +16,6 @@ def parse_protocol(protocol_num, app_protocol_num):
     elif protocol == "ICMPV6":
         return protocol
     else: # Should never happen if program is made well, all protocols should be defined.
-        protocol = protocol_nums.get(protocol, "UNKNOWN")
+        protocol = "UNKNOWN"
         
     return protocol

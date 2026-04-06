@@ -30,18 +30,18 @@ cli_ready_event = threading.Event() # Tells all other threads that the user has 
   
 def main():
     # All detectors and cli have their own packet queue to prevent race conditions and packet loss between queues
-    cli_packet_queue = queue.Queue() 
-    fast_scan_packet_queue = queue.Queue()
-    slow_scan_packet_queue = queue.Queue()
-    arp_spoof_packet_queue = queue.Queue()
-    sweep_packet_queue = queue.Queue()
-    dns_tunnel_packet_queue = queue.Queue()
+    cli_queue = queue.Queue() 
+    slow_scan_queue = queue.Queue()
+    fast_scan_queue = queue.Queue()
+    arp_queue = queue.Queue()
+    icmp_queue = queue.Queue()
+    dns_queue = queue.Queue()
     
     # All threads are set to daemon=True to end when program ends
     # All thread names are for debugging
     cli_thread = threading.Thread(
         target=start_cli,
-        args=(cli_packet_queue, stop_event, cli_ready_event, shared_content),
+        args=(cli_queue, stop_event, cli_ready_event, shared_content),
         name="CLI",
         daemon=True
     )
@@ -54,10 +54,8 @@ def main():
     capture_thread = threading.Thread(
         target=begin_capture,
         args=(
-            device_path, 
-            [cli_packet_queue, fast_scan_packet_queue, slow_scan_packet_queue, 
-            sweep_packet_queue, arp_spoof_packet_queue, dns_tunnel_packet_queue], 
-            stop_event, cli_ready_event
+            device_path, arp_queue, dns_queue, slow_scan_queue, 
+            fast_scan_queue, icmp_queue, cli_queue, stop_event, cli_ready_event
         ),
         name="CAPTURE",
         daemon=True
@@ -66,7 +64,7 @@ def main():
     fast_scan_thread = threading.Thread( # Detects fast port scan (20 hits in 10 seconds)
         target=detect_port_scan,
         # queue, interval, quantity, cooldown, stop event
-        args=(device_name, fast_scan_packet_queue, 10, 20, 30, stop_event, cli_ready_event),
+        args=(device_name, fast_scan_queue, 10, 20, 30, stop_event, cli_ready_event),
         name="FAST-SCAN",
         daemon=True
     )
@@ -76,7 +74,7 @@ def main():
     slow_scan_thread = threading.Thread( # Detects slow port scan (50 hits in 60 seconds
         target=detect_port_scan,
         # queue, interval, quantity, cooldown, stop event, cli ready event
-        args=(device_name, slow_scan_packet_queue, 60, 50, 30, stop_event, cli_ready_event),
+        args=(device_name, slow_scan_queue, 60, 50, 30, stop_event, cli_ready_event),
         name="SLOW-SCAN",
         daemon=True
     )
@@ -85,7 +83,7 @@ def main():
                                      # very deprecated compared to rest of program
         target=detect_sweep,
         # queue, interval, quantity, cooldown, stop event, cli ready event
-        args=(sweep_packet_queue, 5, 10, 30, stop_event, cli_ready_event),
+        args=(icmp_queue, 5, 10, 30, stop_event, cli_ready_event),
         name="SWEEP",
         daemon=True
     )
@@ -93,7 +91,7 @@ def main():
     arp_spoof_thread = threading.Thread(
         target=detect_arp_spoof, 
         # queue, cooldown, stop event, cli ready event
-        args=(arp_spoof_packet_queue, 30, stop_event, cli_ready_event),
+        args=(arp_queue, 30, stop_event, cli_ready_event),
         name="ARP SPOOF",
         daemon=True
     )
@@ -102,7 +100,7 @@ def main():
         target=detect_dns_tunnel,
         # queue, stop event, cli ready event
         # NOTE: No cooldown on dns tunnel since you'd probably want to see payload of each packet no matter how often
-        args=(dns_tunnel_packet_queue, stop_event, cli_ready_event),
+        args=(dns_queue, stop_event, cli_ready_event),
         name="DNS TUNNEL",
         daemon=True
     )
@@ -113,7 +111,7 @@ def main():
     slow_scan_thread.start()
     sweep_thread.start()
     arp_spoof_thread.start()
-    #dns_tunnel_thread.start()
+    dns_tunnel_thread.start()
     
     try:
         while cli_thread.is_alive():
@@ -131,6 +129,6 @@ def main():
         slow_scan_thread.join(timeout=1)
         sweep_thread.join(timeout=1)
         arp_spoof_thread.join(timeout=1)
-        #dns_tunnel_thread.join(timeout=1)
+        dns_tunnel_thread.join(timeout=1)
 
 main()

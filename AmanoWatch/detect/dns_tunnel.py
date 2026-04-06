@@ -20,9 +20,6 @@ class DnsTunnel:
         self.alert_callback = alert_callback
     
     def process_packet(self, packet: PyPacket):
-        if packet.protocol != "DNS" or not packet.query:
-            return
-        
         domain_name = self.parse_dns_name(packet.query)
         
         if not domain_name or domain_name.endswith(".local"):
