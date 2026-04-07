@@ -11,7 +11,6 @@ from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt
 from gui.main_window import MainWindow
 
-
 def main():
     app = QApplication(sys.argv)
     app.setStyle("Fusion")

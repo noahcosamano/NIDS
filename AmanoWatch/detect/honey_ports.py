@@ -4,6 +4,7 @@ from log.log import report_to_webhook
 from network.block_ip import block_ip, unblock_ip
 from network.get_gateway import get_gateway
 from network.get_ip import get_ip
+from utils.geolocate_ip import search_ip
 
 class HoneyPort:
     def __init__(self, device, packet_queue, alert_callback=None):
@@ -48,9 +49,9 @@ class HoneyPort:
         return None, None
     
     def detect(self, timestamp, src_ip, dst_port, protocol, reason):
-        print("Honey Port Connection established")
         #block_ip(src_ip)
-        message = f"\n{timestamp}\nHoneyport Traffic\nSource IP: {src_ip}\n"
+        country = search_ip(src_ip) or "Unknown"
+        message = f"\n{timestamp}\nHoneyport Traffic\nSource IP: {src_ip} ({country})\n"
         message += f"Traffic on port {dst_port} detected.\n"
         message += f"{dst_port} is usually used for {protocol}.\n"
         message += f"Reason for detection: {reason}\n"
@@ -61,7 +62,7 @@ class HoneyPort:
             self.alert_callback(
                 "info",
                 "Honeyport Connection Established",
-                f"{src_ip} connected to port {dst_port}\nport {dst_port} is generally used for {protocol}" \
+                f"{src_ip} (origin: {country}) connected to port {dst_port}\nport {dst_port} is generally used for {protocol}" \
                     f"\nReason for alert: {reason}"
             )
         
