@@ -1,5 +1,4 @@
 from capture.classes.PyPacket import PyPacket
-from log.log import report_to_webhook
 from detect.config import DNS_WHITELIST
 from database.add_detection import add_detection
 import math
@@ -94,8 +93,18 @@ class DnsTunnel:
 
         summary = f"{packet.src_ip} sent malicious domain, possible data exfiltration."
         details = f"Domain: {domain_name}, domain length: {domain_length}, domain entropy: {domain_entropy}, risk score: {risk_score}"
-        add_detection(packet.timestamp, "DNS Tunnel", severity, summary, packet.src_ip, packet.src_mac,
-                      packet.src_port, packet.dst_ip, packet.dst_mac, packet.dst_port, details)
+        
+        add_detection(
+            detector_type="DNS Tunnel", 
+            severity=severity, 
+            summary=summary, 
+            src_ip=packet.src_ip, 
+            src_mac=packet.src_mac,
+            src_port=packet.src_port, 
+            dst_ip=packet.dst_ip, 
+            dst_mac=packet.dst_mac, 
+            dst_port=packet.dst_port, 
+            details=details)
     
 def detect_dns_tunnel(packet_queue, stop_event, cli_ready, alert_callback=None):
     detector = DnsTunnel(packet_queue, alert_callback=alert_callback)

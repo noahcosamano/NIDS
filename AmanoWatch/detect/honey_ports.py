@@ -1,6 +1,5 @@
 from detect.config import HONEY_PORTS
 from capture.classes.PyPacket import PyPacket
-from log.log import report_to_webhook
 from database.add_detection import add_detection
 from network.block_ip import block_ip, unblock_ip
 from network.get_gateway import get_gateway
@@ -50,19 +49,31 @@ class HoneyPort:
     
     def detect(self, packet: PyPacket, protocol, reason):
         country = search_ip(packet.src_ip) or "Unknown"
-        
+
+        summary = f"{packet.src_ip} connected to port {packet.dst_port}"
+        details = f"Origin: {country}, Port Protocol: {protocol}, Reason for Flag: {reason}"
+
+        add_detection(
+            detector_type="Honey Port",
+            severity="INFO",
+            summary=summary,
+            src_ip=packet.src_ip,
+            src_mac=packet.src_mac,
+            src_port=packet.src_port,
+            dst_ip=packet.dst_ip,
+            dst_mac=packet.dst_mac,
+            dst_port=packet.dst_port,
+            details=details,
+        )
+
         if self.alert_callback:
             self.alert_callback(
                 "info",
                 "Honeyport Connection Established",
-                f"{packet.src_ip} (origin: {country}) connected to port {packet.dst_port}\nport {packet.dst_port} is generally used for {protocol}" \
-                    f"\nReason for alert: {reason}"
+                f"{packet.src_ip} (origin: {country}) connected to port {packet.dst_port}\n"
+                f"port {packet.dst_port} is generally used for {protocol}\n"
+                f"Reason for alert: {reason}"
             )
-            
-        summary = f"{packet.src_ip} connected to port {packet.dst_port}"
-        details = f"Origin: {country}, Port Protocol: {protocol}, Reason for Flag: {reason}"
-        add_detection(packet.timestamp, "Honey Port", "INFO", summary, packet.src_ip, packet.src_mac,
-                      packet.src_port, packet.dst_ip, packet.dst_mac, packet.dst_port, details)
         
 def detect_honey_port_connection(device_name, packet_queue, stop_event, cli_ready, alert_callback=None):
     detector = HoneyPort(device_name, packet_queue, alert_callback=alert_callback)

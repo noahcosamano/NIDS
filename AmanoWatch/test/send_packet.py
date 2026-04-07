@@ -118,7 +118,7 @@ def send_arp(target_ip, spoof_ip, spoof_mac, num_packets=1):
 
 def main():
     #send_ftp(20)
-    #send_arp("129.21.102.104", "192.168.1.3", "ac:bb:cc:dd:ee:ff", 20)
+    #send_arp("129.21.102.104", "192.168.1.3", "ad:bb:cc:dd:ee:ff", 20)
     send_dns(20)
 
 main()

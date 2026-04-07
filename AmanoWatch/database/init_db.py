@@ -1,27 +1,13 @@
 import sqlite3
+import os
 
 DB_PATH = "AmanoWatch/database/amanowatch.db"
+SCHEMA_PATH = "AmanoWatch/database/schema.sql"
 
 def init_db():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS detections (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT NOT NULL DEFAULT (datetime('now')),
-            detector_type TEXT NOT NULL, 
-            severity TEXT NOT NULL,
-            src_ip TEXT,
-            src_mac TEXT,
-            src_port INTEGER,
-            dst_ip TEXT,
-            dst_mac TEXT,
-            dst_port INTEGER,
-            details TEXT,
-            summary TEXT NOT NULL
-        )
-    """)
-
+    with open(SCHEMA_PATH, "r") as f:
+        conn.executescript(f.read())
     conn.commit()
     conn.close()

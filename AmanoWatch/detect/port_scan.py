@@ -3,7 +3,6 @@ from network.block_ip import block_ip, unblock_ip
 from network.get_gateway import get_gateway
 from network.get_ip import get_ip
 from detect.config import FLAG_TO_NAME
-from log.log import report_to_webhook
 from database.add_detection import add_detection
 import time
 import traceback
@@ -108,7 +107,6 @@ class PortScan:
 
         # Persist to database
         add_detection(
-            timestamp=packet.timestamp,
             detector_type=scan_type,
             severity="WARNING",
             summary=summary,
@@ -120,10 +118,6 @@ class PortScan:
             dst_port=packet.dst_port,
             details=details,
         )
-
-        # Webhook
-        webhook_message = f"\n{time.ctime()}\n{scan_type}\nSource IP: {src_ip}\n{all_packets}"
-        report_to_webhook(scan_type, webhook_message)
 
         # GUI alert last
         if self.alert_callback:

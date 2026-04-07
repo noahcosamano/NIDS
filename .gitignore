@@ -8,3 +8,4 @@ Release/
 x64/
 build/
 .vs/
+*.db

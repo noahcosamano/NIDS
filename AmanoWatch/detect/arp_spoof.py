@@ -43,8 +43,17 @@ class ArpSpoof:
         
         summary = f"{packet.src_ip} changed MAC address from {old_mac} to {new_mac}"
         
-        add_detection(packet.timestamp, "ARP Spoof", "CRITICAL", summary, packet.src_ip, old_mac, 
-                      packet.src_port, packet.dst_ip, packet.dst_mac, packet.dst_port, None)
+        add_detection(
+            detector_type="ARP Spoof", 
+            severity="CRITICAL", 
+            summary=summary, 
+            src_ip=packet.src_ip, 
+            src_mac=old_mac, 
+            src_port=packet.src_port, 
+            dst_ip=packet.dst_ip, 
+            dst_mac=packet.dst_mac, 
+            dst_port=packet.dst_port, 
+            details=None)
         
 def detect_arp_spoof(packet_queue, cooldown, stop_event, cli_ready, alert_callback=None):
     detector = ArpSpoof(packet_queue, cooldown, alert_callback=alert_callback)
