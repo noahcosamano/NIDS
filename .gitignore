@@ -1,11 +1,28 @@
+# SQLite databases
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Python
 __pycache__/
 *.pyc
-logs/*.log
-.env
-old-capture/
-Debug/
-Release/
-x64/
-build/
-.vs/
-*.db
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
