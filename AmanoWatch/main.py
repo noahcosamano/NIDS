@@ -36,6 +36,7 @@ def main():
     arp_queue = queue.Queue()
     icmp_queue = queue.Queue()
     dns_queue = queue.Queue()
+    honey_port_queue = queue.Queue()
     
     # All threads are set to daemon=True to end when program ends
     # All thread names are for debugging
@@ -54,7 +55,7 @@ def main():
     capture_thread = threading.Thread(
         target=begin_capture,
         args=(
-            device_path, arp_queue, dns_queue, slow_scan_queue, 
+            device_path, arp_queue, dns_queue, honey_port_queue, slow_scan_queue, 
             fast_scan_queue, icmp_queue, cli_queue, stop_event, cli_ready_event
         ),
         name="CAPTURE",

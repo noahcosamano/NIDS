@@ -1,18 +1,9 @@
 from capture.classes.PyPacket import PyPacket
 from log.log import report_to_webhook
+from detect.config import DNS_WHITELIST
 import math
 from collections import Counter 
 import time
-
-WHITELIST = {
-    "azure.com", 
-    "microsoft.com", 
-    "windowsupdate.com", 
-    "amazonaws.com", 
-    "google.com", 
-    "akamai.net",
-    "sharepoint.com"
-}
 
 class DnsTunnel:
     def __init__(self, packet_queue, alert_callback=None):
@@ -41,7 +32,7 @@ class DnsTunnel:
         if not all(c.isprintable() and ord(c) < 128 for c in subdomain_name):
             return
         
-        if any(domain.endswith(trusted) for trusted in WHITELIST):
+        if any(domain.endswith(trusted) for trusted in DNS_WHITELIST):
             return
         
         entropy = self.string_entropy(subdomain_name)

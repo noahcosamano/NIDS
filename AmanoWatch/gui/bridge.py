@@ -20,6 +20,7 @@ try:
     from detect.icmp_sweep import detect_sweep
     from detect.arp_spoof import detect_arp_spoof
     from detect.dns_tunnel import detect_dns_tunnel
+    from detect.honey_ports import detect_honey_port_connection
     REAL_CAPTURE = True
 except ImportError:
     REAL_CAPTURE = False
@@ -88,6 +89,7 @@ class CaptureBridge(QObject):
         icmp_q   = queue.Queue()
         arp_q    = queue.Queue()
         dns_q    = queue.Queue()
+        honey_port_q = queue.Queue()
         ready    = threading.Event(); ready.set()
         device   = self.device_name
 
@@ -95,7 +97,7 @@ class CaptureBridge(QObject):
             from capture.capture import begin_capture
             begin_capture(
                 self.device_path.encode(),
-                arp_q, dns_q, fast_q, slow_q, icmp_q, cli_q,
+                arp_q, dns_q, honey_port_q, fast_q, slow_q, icmp_q, cli_q,
                 self.stop_event, ready
             )
 
@@ -120,8 +122,10 @@ class CaptureBridge(QObject):
             detect_arp_spoof(arp_q, 30, self.stop_event, ready, alert_callback=_emit_alert)
         def _dns():
             detect_dns_tunnel(dns_q, self.stop_event, ready, alert_callback=_emit_alert)
+        def _honey_port():
+            detect_honey_port_connection(honey_port_q, self.stop_event, ready, alert_callback=_emit_alert)
 
-        targets = [_capture, lambda: _drain(cli_q), _fast_scan, _slow_scan, _arp, _dns]
+        targets = [_capture, lambda: _drain(cli_q), _fast_scan, _slow_scan, _arp, _dns, _honey_port]
         for fn in targets:
             t = threading.Thread(target=fn, daemon=True)
             t.start()

@@ -2,7 +2,7 @@ from capture.classes.PyPacket import PyPacket
 from network.block_ip import block_ip, unblock_ip
 from network.get_gateway import get_gateway
 from network.get_ip import get_ip
-from detect.config import flag_to_name
+from detect.config import FLAG_TO_NAME
 from log.log import report_to_webhook
 import time
 
@@ -76,7 +76,7 @@ class PortScan:
             return  # one alert per packet is enough; recheck next packet
 
     def log_alert(self, src_ip, flag):
-        scan_type = flag_to_name.get(flag, flag)
+        scan_type = FLAG_TO_NAME.get(flag, flag)
         message = f"\n{time.ctime()}\n{scan_type}\nSource IP: {src_ip}\n"
 
         for t, p in sorted(self.activity[src_ip], key=lambda x: x[1]):

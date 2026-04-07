@@ -19,7 +19,7 @@ def convert_to_pypacket(protocol, type, flags, src_mac, dst_mac, src_ip, dst_ip,
     
     return pypacket
 
-def queue(arp_queue, dns_queue, fast_scan_queue, slow_scan_queue, icmp_queue, cli_queue, packet: PyPacket):
+def queue(arp_queue, dns_queue, honey_port_queue, fast_scan_queue, slow_scan_queue, icmp_queue, cli_queue, packet: PyPacket):
     cli_queue.put(packet)
     
     if packet.protocol == "ARP":
@@ -29,10 +29,11 @@ def queue(arp_queue, dns_queue, fast_scan_queue, slow_scan_queue, icmp_queue, cl
     elif packet.protocol in ("TCP", "UDP"):
         fast_scan_queue.put(packet)
         slow_scan_queue.put(packet)
+        honey_port_queue.put(packet)
     elif packet.protocol == "ICMP":
         icmp_queue.put(packet)
 
-def begin_capture(device, arp_queue, dns_queue, fast_scan_queue, 
+def begin_capture(device, arp_queue, dns_queue, honey_port_queue, fast_scan_queue, 
                   slow_scan_queue, icmp_queue, cli_queue, stop_event, cli_ready):
     PCAP_ERRBUF_SIZE = 256 # Size of buffer in bytes
     # This is the error buffer passed into InitCapture in dll so python can see error messages
@@ -99,7 +100,7 @@ def begin_capture(device, arp_queue, dns_queue, fast_scan_queue,
                                                 dst_mac,src_ip, dst_ip, cpacket.src_port,
                                                 cpacket.dst_port, raw_payload, payload_len, cpacket.tv_sec)
                 
-                    queue(arp_queue, dns_queue, fast_scan_queue, slow_scan_queue, icmp_queue, cli_queue, pypacket)
+                    queue(arp_queue, dns_queue, honey_port_queue, fast_scan_queue, slow_scan_queue, icmp_queue, cli_queue, pypacket)
 
             elif count < 0: # Abnormal failure, tell the user and close capture
                 error(errbuf)

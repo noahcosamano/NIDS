@@ -196,7 +196,8 @@ class MainWindow(QMainWindow):
             ("slow_scan",   "Port Scan (Slow)", True),
             ("sweep",       "ICMP Sweep",       True),
             ("arp",         "ARP Spoof",        True),
-            ("dns_tunnel",  "DNS Tunnel",       False),
+            ("dns_tunnel",  "DNS Tunnel",       True),
+            ("honey_port",  "Honey Port Connection", True),
         ):
             cb = QCheckBox(label)
             cb.setChecked(default)
@@ -338,6 +339,7 @@ class MainWindow(QMainWindow):
             "sweep":      "detect_sweep",
             "arp":        "detect_arp",
             "dns_tunnel": "detect_dns_tunnel",
+            "honey_port": "detect_honey_port_connection"
         }
         if hasattr(self._bridge, attr_map[key]):
             setattr(self._bridge, attr_map[key], checked)
