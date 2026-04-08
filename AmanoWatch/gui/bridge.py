@@ -20,6 +20,13 @@ from detect.arp_spoof import detect_arp_spoof
 from detect.dns_tunnel import detect_dns_tunnel
 from detect.honey_ports import detect_honey_port_connection
 
+# Real pcap_stats() wrapper — returns (recv, drop, ifdrop)
+try:
+    from network.capture_stats import get_capture_stats
+except ImportError:
+    def get_capture_stats():
+        return (0, 0, 0)
+
 
 DETECTOR_KEYS = ("fast_scan", "slow_scan", "sweep", "arp", "dns_tunnel", "honey_port")
 
@@ -33,7 +40,7 @@ class CaptureBridge(QObject):
         stats_updated(dict)         – periodic stats snapshot
     """
     packet_received = pyqtSignal(object)
-    alert_fired     = pyqtSignal(str, str, str)   # severity, title, body
+    alert_fired     = pyqtSignal(str, str, str)
     stats_updated   = pyqtSignal(dict)
 
     def __init__(self, device_path: str = "", device_name: str = "", parent=None):
@@ -44,15 +51,15 @@ class CaptureBridge(QObject):
         self._threads     = []
         self._pkt_count   = 0
         self._drop_count  = 0
+        self._ifdrop_count= 0
+        self._pcap_recv   = 0
         self._proto_counts= {}
         self._lock        = threading.Lock()
 
-        # Per-detector stop events. Setting one of these stops just
-        # that detector; clearing + restarting its thread brings it back.
+        # Per-detector stop events.
         self._det_stops = {k: threading.Event() for k in DETECTOR_KEYS}
 
-        # Per-detector queues — kept alive across restarts so the capture
-        # thread keeps writing to a stable reference.
+        # Per-detector queues — kept alive across restarts.
         self._det_queues = {
             "fast_scan":  queue.Queue(),
             "slow_scan":  queue.Queue(),
@@ -62,8 +69,8 @@ class CaptureBridge(QObject):
             "honey_port": queue.Queue(),
         }
         self._det_threads = {k: None for k in DETECTOR_KEYS}
+        self._cli_q = None
 
-        # Enabled flags — default all on
         self._enabled = {k: True for k in DETECTOR_KEYS}
 
     # ── Public API ─────────────────────────────────────────────────────────────
@@ -73,8 +80,10 @@ class CaptureBridge(QObject):
         for ev in self._det_stops.values():
             ev.clear()
         with self._lock:
-            self._pkt_count = 0
-            self._drop_count = 0
+            self._pkt_count    = 0
+            self._drop_count   = 0
+            self._ifdrop_count = 0
+            self._pcap_recv    = 0
             self._proto_counts = {}
 
         if not self.device_path:
@@ -96,7 +105,6 @@ class CaptureBridge(QObject):
         self._det_threads = {k: None for k in DETECTOR_KEYS}
 
     def set_detector_enabled(self, key: str, enabled: bool):
-        """Enable or disable a single detector at runtime."""
         if key not in self._enabled:
             return
         if self._enabled[key] == enabled:
@@ -104,7 +112,6 @@ class CaptureBridge(QObject):
         self._enabled[key] = enabled
 
         if enabled:
-            # Drain any stale queued items so we don't alert on old data
             q = self._det_queues[key]
             try:
                 while True:
@@ -123,7 +130,7 @@ class CaptureBridge(QObject):
 
     # ── Capture thread ─────────────────────────────────────────────────────────
     def _start_capture(self):
-        cli_q = queue.Queue()
+        self._cli_q = queue.Queue()
         ready = threading.Event()
         ready.set()
 
@@ -136,7 +143,7 @@ class CaptureBridge(QObject):
                 self._det_queues["fast_scan"],
                 self._det_queues["slow_scan"],
                 self._det_queues["sweep"],
-                cli_q,
+                self._cli_q,
                 self.stop_event,
                 ready
             )
@@ -144,7 +151,7 @@ class CaptureBridge(QObject):
         def _drain_cli():
             while not self.stop_event.is_set():
                 try:
-                    pkt = cli_q.get(timeout=0.1)
+                    pkt = self._cli_q.get(timeout=0.1)
                     self._on_packet(pkt)
                 except queue.Empty:
                     continue
@@ -165,7 +172,6 @@ class CaptureBridge(QObject):
         device = self.device_name
 
         def _emit_alert(severity, title, detail):
-            # Guard against late-firing alerts after disable
             if not stop_ev.is_set():
                 self.alert_fired.emit(severity, title, detail)
 
@@ -209,15 +215,34 @@ class CaptureBridge(QObject):
             prev = 0
             while not self.stop_event.is_set():
                 time.sleep(1)
+
+                # Pull real pcap stats from the C layer
+                recv, drop, ifdrop = get_capture_stats()
+
                 with self._lock:
                     cur = self._pkt_count
                     pps = cur - prev
                     prev = cur
+
+                    # Prefer pcap's own recv count when available
+                    self._pcap_recv    = recv
+                    self._drop_count   = drop
+                    self._ifdrop_count = ifdrop
+
+                    # Sum all detector queue depths + cli queue
+                    q_depth = sum(q.qsize() for q in self._det_queues.values())
+                    if self._cli_q is not None:
+                        q_depth += self._cli_q.qsize()
+
                     snap = {
-                        "total":  cur,
-                        "dropped":self._drop_count,
-                        "pps":    pps,
-                        "protos": dict(self._proto_counts),
+                        "total":   cur,
+                        "recv":    recv,           # pcap's ps_recv
+                        "dropped": drop + ifdrop,  # kernel + NIC drops
+                        "kdrop":   drop,
+                        "ifdrop":  ifdrop,
+                        "pps":     pps,
+                        "queue":   q_depth,
+                        "protos":  dict(self._proto_counts),
                     }
                 self.stats_updated.emit(snap)
 

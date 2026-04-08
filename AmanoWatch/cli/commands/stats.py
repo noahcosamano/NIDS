@@ -1,7 +1,7 @@
 import ctypes
 from utils.load_dll import get_dll_path
 from utils.ui_helpers import error, clear
-from network.packet_loss import PcapStats
+from network.capture_stats import PcapStats
 import msvcrt
    
 def execute(stop_event):

@@ -82,9 +82,9 @@ class StatsPanel(QWidget):
         cards_layout.setSpacing(10)
 
         self._card_recv    = StatCard("PACKETS RECEIVED", "0", GREEN)
-        self._card_drop    = StatCard("DROPPED (BUFFER)",  "0", RED)
-        self._card_pps     = StatCard("PACKETS / SEC",    "0", CYAN)
-        self._card_protos  = StatCard("UNIQUE PROTOCOLS", "0", ORANGE)
+        self._card_drop    = StatCard("DROPPED",           "0", RED)
+        self._card_pps     = StatCard("PACKETS / SEC",     "0", CYAN)
+        self._card_protos  = StatCard("UNIQUE PROTOCOLS",  "0", ORANGE)
 
         for card in (self._card_recv, self._card_drop,
                      self._card_pps, self._card_protos):
@@ -120,6 +120,8 @@ class StatsPanel(QWidget):
         for label, attr in (
             ("QUEUE SIZE",    "_foot_queue"),
             ("PACKET LOSS",   "_foot_loss"),
+            ("KERNEL DROPS",  "_foot_kdrop"),
+            ("NIC DROPS",     "_foot_ifdrop"),
             ("UPTIME",        "_foot_uptime"),
         ):
             col = QVBoxLayout()
@@ -142,11 +144,18 @@ class StatsPanel(QWidget):
         import time
 
         total   = snap.get("total",   0)
+        recv    = snap.get("recv",    0)
         dropped = snap.get("dropped", 0)
+        kdrop   = snap.get("kdrop",   0)
+        ifdrop  = snap.get("ifdrop",  0)
         pps     = snap.get("pps",     0)
+        queue_d = snap.get("queue",   0)
         protos  = snap.get("protos",  {})
 
-        self._card_recv.set_value(f"{total:,}")
+        # Prefer pcap's recv count when we have it; fall back to our own
+        display_total = recv if recv > 0 else total
+
+        self._card_recv.set_value(f"{display_total:,}")
         self._card_drop.set_value(f"{dropped:,}")
         self._card_pps.set_value(str(pps))
         self._card_protos.set_value(str(len(protos)))
@@ -156,16 +165,20 @@ class StatsPanel(QWidget):
         h, rem  = divmod(elapsed, 3600)
         m, s    = divmod(rem, 60)
         self._foot_uptime.setText(f"{h:02d}:{m:02d}:{s:02d}")
-        self._foot_loss.setText(
-            f"{dropped/(max(total,1)+dropped)*100:.2f}%"
-        )
-        self._foot_queue.setText(str(snap.get("queue", 0)))
+
+        # Packet loss — pcap's ps_recv already includes drops, so use total as denom
+        denom = max(display_total, 1)
+        loss_pct = (dropped / denom) * 100
+        self._foot_loss.setText(f"{loss_pct:.2f}%")
+
+        self._foot_queue.setText(f"{queue_d:,}")
+        self._foot_kdrop.setText(f"{kdrop:,}")
+        self._foot_ifdrop.setText(f"{ifdrop:,}")
 
         # Bars
         proto_total = sum(protos.values()) or 1
         sorted_p = sorted(protos.items(), key=lambda x: x[1], reverse=True)
 
-        # Add any new protocol bars
         for proto, count in sorted_p:
             if proto not in self._proto_bars:
                 row = QHBoxLayout()
@@ -174,11 +187,9 @@ class StatsPanel(QWidget):
                 bar = ProtoBar(proto)
                 row.addWidget(lbl)
                 row.addWidget(bar, 1)
-                # Insert before stretch
                 self._bars_layout.insertLayout(
                     self._bars_layout.count() - 1, row)
                 self._proto_bars[proto] = bar
 
-        # Update all bars
         for proto, bar in self._proto_bars.items():
             bar.set_data(protos.get(proto, 0), proto_total)
