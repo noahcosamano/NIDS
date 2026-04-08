@@ -103,7 +103,7 @@ def main():
     send_packet("TCP", DST_IP, SRC_IP, 9999, 23, None, None, 1)  # Telnet honeyport (port 23!)
     
     # DNS Tunnel
-    send_dns(10) # DNS Tunnel
+    send_dns(3) # DNS Tunnel
     
     # SYN Scan
     send_port_scan(ports, "S") # SYN scan

@@ -24,6 +24,10 @@ COL_WIDTHS = [80, 68, 130, 130, 75, 75, 100, 180]
 MAX_ROWS    = 500    # cap of rows displayed in the table
 MAX_HISTORY = 2000   # packets retained for re-filtering
 
+# If the scrollbar is within this many pixels of the top, we consider the
+# user to be "at the top" and auto-scroll to follow new packets.
+AUTOSCROLL_THRESHOLD = 4
+
 
 # ── Packet Detail Dialog ───────────────────────────────────────────────────────
 class PacketDetailDialog(QDialog):
@@ -234,15 +238,24 @@ class StreamPanel(QWidget):
 
         batch, self._pending = self._pending, []
 
+        # Snapshot scroll state BEFORE inserting. New rows go in at index 0
+        # (top), so if the user is at the top they want to follow the stream;
+        # if they've scrolled down they want their current view preserved.
+        scrollbar = self._table.verticalScrollBar()
+        was_at_top = (scrollbar.value() <= AUTOSCROLL_THRESHOLD)
+        prev_scroll = scrollbar.value()
+
         self._table.setUpdatesEnabled(False)
         self._table.setSortingEnabled(False)
 
+        inserted = 0
         for pkt in batch:
             if not self._matches(pkt):
                 continue
             self._insert_row(pkt)
+            inserted += 1
 
-        # Trim to MAX_ROWS
+        # Trim to MAX_ROWS from the bottom (oldest rows)
         overflow = self._table.rowCount() - MAX_ROWS
         if overflow > 0:
             for _ in range(overflow):
@@ -250,6 +263,16 @@ class StreamPanel(QWidget):
 
         self._table.setUpdatesEnabled(True)
         self._row_lbl.setText(f"{self._table.rowCount()} rows")
+
+        # Preserve the user's view. If they were at the top, follow new rows;
+        # otherwise shift the scrollbar down by the number of newly inserted
+        # rows so the packet they were looking at stays put on screen.
+        if was_at_top:
+            scrollbar.setValue(0)
+        elif inserted > 0:
+            row_height = self._table.verticalHeader().defaultSectionSize()
+            new_pos = prev_scroll + (inserted * row_height)
+            scrollbar.setValue(min(new_pos, scrollbar.maximum()))
 
         # Refresh autocomplete model
         self._refresh_completer()
