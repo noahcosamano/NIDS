@@ -9,20 +9,20 @@ the C packet is just for capturing purposes.
 
 @dataclass
 class PyPacket:
-    dst_mac: Optional[str]     # Primarily for logging purposes 
-    src_mac: Optional[str]     # Used to check arp spoofing
+    dst_mac: Optional[str]
+    src_mac: Optional[str]
     protocol: Optional[str]
     type: Optional[int]        # If applicable, will track ICMP request vs. reply
-    src_ip: Optional[str]      # Used in synergy with dst_port to track traffic frequency
-    dst_ip: Optional[str]      # Used to detect an ICMP sweep
+    src_ip: Optional[str]
+    dst_ip: Optional[str]
     src_port: Optional[int]    
-    dst_port: Optional[int]    # Used in synergy with src_ip to track traffic frequency
+    dst_port: Optional[int]
     flags: Optional[str]       # Used to detect different types of TCP scans (ie. SYN, XMAS, NULL, etc.)
     query: Optional[bytes]     # Used to detect DNS tunneling via string entropy
     query_len: Optional[int]
-    timestamp: float           # For logging or tracking traffic frequency
+    timestamp: float
      
-    def __str__(self): # For printing packets to the terminal when using CLI version of the program
+    def __str__(self):
         parts = []
 
         # Protocol header

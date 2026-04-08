@@ -4,8 +4,28 @@ from network.get_gateway import get_gateway
 from network.get_ip import get_ip
 from detect.config import FLAG_TO_NAME
 from database.edit import add_detection
+from collections import deque, defaultdict
 import time
 import traceback
+
+
+class _SourceState:
+    """
+    Per-source tracking state. One of these exists per src_ip.
+
+    For each scan type we maintain:
+      - window:       deque of (timestamp, port) ordered by time
+      - port_counts:  dict of {port: occurrences_in_window} — lets us know
+                      when a port leaves the window entirely so we can
+                      shrink the unique-port set incrementally
+      - last_alert:   last time we alerted on this scan type
+    """
+    __slots__ = ("windows", "port_counts", "last_alert")
+
+    def __init__(self):
+        self.windows     = defaultdict(deque)            # scan_type -> deque[(ts, port)]
+        self.port_counts = defaultdict(lambda: defaultdict(int))  # scan_type -> {port: count}
+        self.last_alert  = {}                            # scan_type -> ts
 
 
 class PortScan:
@@ -16,16 +36,13 @@ class PortScan:
         self.cooldown = cooldown
         self.gateway = get_gateway()
         self.host_ip = get_ip(device)
-        self.last_alert = {}    # src_ip -> {scan_type: last_alert_time}
-        self.activity = {}      # src_ip -> list of (timestamp, port, scan_type)
-        self.scan_counts = {}   # src_ip -> {scan_type: count}
         self.alert_callback = alert_callback
+        self.sources = {}   # src_ip -> _SourceState
 
         if self.host_ip:
             self.host_ip = self.host_ip.replace("(Preferred)", "").strip()
 
     def process_packet(self, packet: PyPacket):
-        now = packet.timestamp
         src_ip = packet.src_ip
         dst_port = packet.dst_port
         flags = packet.flags or "NONE"
@@ -41,74 +58,71 @@ class PortScan:
         if self.host_ip and self.host_ip == src_ip:
             return
 
-        # Only count packets whose flag combination matches a known scan type.
-        # FLAG_TO_NAME contains exactly the probe combinations we care about
-        # (SYN, FIN, FIN PSH URG, etc.) — anything else (RST ACK, PSH ACK,
-        # SYN ACK, etc.) is reply/normal traffic and gets dropped here.
+        # Only count flag combinations that match a known probe type.
+        # Normal mid-stream traffic (ACK, PSH ACK, etc.) drops out here,
+        # which eliminates >95% of packets before any expensive work.
         scan_type = FLAG_TO_NAME.get(flags)
         if scan_type is None:
             return
 
-        # Initialize per-source tracking on first sighting
-        if src_ip not in self.activity:
-            self.activity[src_ip]    = []
-            self.scan_counts[src_ip] = {}
-            self.last_alert[src_ip]  = {}
+        now = packet.timestamp
 
-        self.scan_counts[src_ip][scan_type] = self.scan_counts[src_ip].get(scan_type, 0) + 1
-        self.activity[src_ip].append((now, dst_port, scan_type))
+        # Lazy-create per-source state
+        state = self.sources.get(src_ip)
+        if state is None:
+            state = _SourceState()
+            self.sources[src_ip] = state
 
-        # Slide the window
+        window = state.windows[scan_type]
+        port_counts = state.port_counts[scan_type]
+
+        # Evict expired entries from the front of the deque. O(k) where k
+        # is the number of entries that actually expired this tick — usually
+        # 0 or 1, not the whole window.
         cutoff = now - self.interval
-        self.activity[src_ip] = [(t, p, s) for t, p, s in self.activity[src_ip] if t >= cutoff]
+        while window and window[0][0] < cutoff:
+            _, old_port = window.popleft()
+            port_counts[old_port] -= 1
+            if port_counts[old_port] <= 0:
+                del port_counts[old_port]
 
-        self.check_scan(packet, now)
+        # Record the new probe
+        window.append((now, dst_port))
+        port_counts[dst_port] += 1
 
-    def check_scan(self, packet: PyPacket, now):
+        # Fast reject: len(port_counts) is the unique-port count, maintained
+        # incrementally. If we're below threshold, bail immediately — no need
+        # to even call check_scan.
+        if len(window) < self.quantity or len(port_counts) < self.quantity:
+            return
+
+        # Cooldown check
+        last_time = state.last_alert.get(scan_type, 0)
+        if now - last_time < self.cooldown:
+            return
+        state.last_alert[scan_type] = now
+
+        self._log_alert(packet, scan_type, window, port_counts)
+
+        # Reset this scan type's window so we don't re-alert on the same burst
+        window.clear()
+        port_counts.clear()
+
+    def _log_alert(self, packet: PyPacket, scan_type: str, window, port_counts):
         src_ip = packet.src_ip
-        counts = self.scan_counts.get(src_ip, {})
+        unique_ports = len(port_counts)
 
-        for scan_type, num in list(counts.items()):
-            # Count unique ports hit by THIS scan type only — prevents a SYN
-            # flood from inflating the port count that ACK scan detection sees,
-            # which was causing duplicate alerts on a single nmap run.
-            unique_ports = {p for _, p, s in self.activity[src_ip] if s == scan_type}
-
-            if num < self.quantity or len(unique_ports) < self.quantity:
-                continue
-
-            last_time = self.last_alert[src_ip].get(scan_type, 0)
-            if now - last_time < self.cooldown:
-                continue
-
-            self.last_alert[src_ip][scan_type] = now
-
-            # Clear ALL scan counts. Probes from one scan type can inflate
-            # counts for others; per-type cooldowns above let each scan
-            # re-detect independently.
-            self.scan_counts[src_ip].clear()
-
-            self.log_alert(packet, scan_type)
-            return  # one alert per packet
-
-    def log_alert(self, packet: PyPacket, scan_type: str):
-        src_ip = packet.src_ip
-
-        # Only show packets that belong to THIS scan type in the details
-        type_packets = [(t, p) for t, p, s in self.activity[src_ip] if s == scan_type]
-
+        # Only format the full packet list for the DB — not the hot path
         all_packets = ""
-        for t, p in sorted(type_packets, key=lambda x: x[1]):
+        for t, p in sorted(window, key=lambda x: x[1]):
             all_packets += f"{time.ctime(t)} | Port: {p}\n"
 
-        unique_ports = len({p for _, p in type_packets})
         summary = f"{src_ip} performed {scan_type} across {unique_ports}+ ports in {self.interval}s"
         details = f"Scan type: {scan_type}\nUnique ports: {unique_ports}\nPackets:\n{all_packets}"
 
-        # Persist to database
         add_detection(
             detector_type="Port Scan",
-            severity="WARNING",
+            severity="warning",
             summary=summary,
             src_ip=src_ip,
             src_mac=packet.src_mac,
@@ -119,17 +133,12 @@ class PortScan:
             details=details,
         )
 
-        # GUI alert last
         if self.alert_callback:
             self.alert_callback(
                 "warning",
                 scan_type.upper(),
                 f"{scan_type} across {unique_ports} ports from {src_ip}"
             )
-
-        # Trim window
-        cutoff = time.time() - self.interval
-        self.activity[src_ip] = [(t, p, s) for t, p, s in self.activity[src_ip] if t >= cutoff]
 
 
 def detect_port_scan(device, packet_queue, interval, quantity, cooldown, stop_event, cli_ready, alert_callback=None):

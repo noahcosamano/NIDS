@@ -9,7 +9,7 @@ from utils.ui_helpers import error
 import ctypes
 
 
-# Batch size — acts as a ceiling. C returns early on pcap timeout (100ms),
+# PACKET_BATCH_SZIE acts as a ceiling. C returns early on pcap timeout (100ms),
 # so on quiet links you get whatever's ready after 100ms regardless of size.
 PACKET_BATCH_SIZE = 1000
 
@@ -54,6 +54,7 @@ def _route(arp_q, dns_q, honey_q, fast_q, slow_q, icmp_q, cli_q,
 
 def begin_capture(device, arp_queue, dns_queue, honey_port_queue, fast_scan_queue,
                   slow_scan_queue, icmp_queue, cli_queue, stop_event, cli_ready):
+    
     PCAP_ERRBUF_SIZE = 256
     errbuf = ctypes.create_string_buffer(PCAP_ERRBUF_SIZE)
 

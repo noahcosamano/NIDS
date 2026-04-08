@@ -8,17 +8,13 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-// NOTE: memcpy is scattered throughout program, this is costly so I 
-// intend on changing it to something more time efficient
-
-// Tells the program that anything starting with 'EXPORT' can be used externally
 #define EXPORT __declspec(dllexport)
 
 // Packet capture handle
 static pcap_t* global_handle = NULL;
-// Initializes global link
+// Tells computer if connection is ethernet or loopback
 static int global_link_type = 0;
-// Just so the program knows the size of buffer
+// Stores errors if applicable when getting devices
 static char device_list_buffer[4096];
 
 // header: Initial packet header
@@ -29,7 +25,7 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
     // Total time is the sum of tv_sec and tv_usec
     p->tv_sec = (long long)header->ts.tv_sec; // Seconds
     p->tv_usec = (long long)header->ts.tv_usec; // Microseconds
-    p->payload = NULL;     // Explicitly nullify so error doesnt occur
+    p->payload = NULL;
     p->payload_len = 0;
     p->app_protocol = 0;
 
@@ -37,10 +33,8 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
     uint16_t eth_type = 0; // Initialize ethernet type
 
     if (global_link_type == DLT_EN10MB) { // Ethernet
-        // Get ethernet header
         struct eth_header* eth = (struct eth_header*)(pkt_data);
         eth_type = ntohs(eth->type); // Converts ethernet type from big endian to little endian
-        // (Network Byte Order -> Host Byte Order)
         offset = 14; // Eth header is 14 bytes
 
         if (eth_type == 0x8100) { // VLAN tag
@@ -63,7 +57,6 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
     int transport_offset = 0; // Tracks where program is in each protocol offset
 
     if (eth_type == 0x0800) { // IPv4
-        // Get IPv4 header
         struct ipv4_header* ip = (struct ipv4_header*)(pkt_data + offset);
         int ip_len = (ip->ver_ihl & 0x0F) * 4; // Gets the length of the IP header in bytes
         p->protocol = ip->proto;
@@ -73,7 +66,6 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
         transport_offset = offset + ip_len; // Keeps track of running offset so the program knows where next header is
     }
     else if (eth_type == 0x86DD) { // IPv6
-        // Get IPv6 header
         struct ipv6_header* ip6 = (struct ipv6_header*)(pkt_data + offset);
         p->protocol = ip6->next_header; // IPv6 already knows its next header, no need to track it
         p->is_ipv6 = 1; // Tells packet that it is IPv6
@@ -95,7 +87,6 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
         }
     }
     else if (eth_type == 0x0806) { // ARP
-        // Get ARP header
         struct arp_header* arp = (struct arp_header*)(pkt_data + offset);
         p->protocol = 205; // ARP will be protocol #205 for the sake of simplicity
         p->src_port = ntohs(arp->oper); // src_port of an ARP packet will track for request (1) or reply (2)
@@ -108,7 +99,6 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
     }
 
     if (p->protocol == 6) { // TCP
-        // Gets TCP header
         struct tcp_header* tcp = (struct tcp_header*)(pkt_data + transport_offset);
         p->src_port = ntohs(tcp->src_port);
         p->dst_port = ntohs(tcp->dst_port);
@@ -150,13 +140,12 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
 }
 
 EXPORT int GetStats(struct pcap_stat* stats) { // Gets stats of packet capture e.g. packets captured, packet loss, etc.
-    // 1. Safety check: make sure the capture has actually started
+    // Make sure the capture has actually started
     if (global_handle == NULL) {
         return -1;
     }
 
-    // 2. pcap_stats is the built-in function that populates the struct
-    // It returns 0 on success, -1 on error
+    // pcap_stats is the built in function that populates the struct
     if (pcap_stats(global_handle, stats) < 0) {
         return -2;
     }
@@ -164,9 +153,8 @@ EXPORT int GetStats(struct pcap_stat* stats) { // Gets stats of packet capture e
     return 0;
 }
 
-// Exported Functions
 EXPORT char* GetDevices(char* device_errbuf) { // 'device_errbuf' stores error message if system fails to get devices
-    pcap_if_t* alldevs; // Stores all devices on the system
+    pcap_if_t* alldevs;
     pcap_if_t* d;
 
     // Clear the buffer
@@ -205,7 +193,7 @@ EXPORT int InitCapture(const char* device_name, char* errbuf) { // Device name p
     global_handle = pcap_create(device_name, errbuf);
     pcap_set_snaplen(global_handle, 65535); // The max length of each capture
     pcap_set_promisc(global_handle, 1); // 1 enables promiscuous mode, 0 disables it
-    pcap_set_timeout(global_handle, 100); // 100 ms timeout on packet
+    pcap_set_timeout(global_handle, 100); // 100 ms timeout on packet cache, always return after 100 ms no matter how many packets
     pcap_set_buffer_size(global_handle, 256 * 1024 * 1024); // 256MB buffer
     pcap_activate(global_handle);
     // Checks if global_handle opened successfully
@@ -213,11 +201,10 @@ EXPORT int InitCapture(const char* device_name, char* errbuf) { // Device name p
         global_link_type = pcap_datalink(global_handle); // Link-layer header type e.g. loopback, ethernet, etc.
         return 1; // Success
     }
-    // Failure, I think i need to print the errbuf or somehow get the error message to python.
     return 0;
 }
 
-EXPORT int GetNextPacketCache(packet* packetCache, int max_count) { // Packet cache passed in by python call
+EXPORT int GetNextPacketCache(packet* packetCache, int max_count) { // Packet cache passed in by python call, same with max_count
     if (!global_handle) return -1; // Double-checks if global handle exists
     if (max_count <= 0) return 0;
 
