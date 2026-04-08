@@ -107,7 +107,7 @@ class PortScan:
 
         # Persist to database
         add_detection(
-            detector_type=scan_type,
+            detector_type="Port Scan",
             severity="WARNING",
             summary=summary,
             src_ip=src_ip,

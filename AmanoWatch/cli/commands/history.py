@@ -1,7 +1,8 @@
 from utils.ui_helpers import clear, error
 import ipaddress
 import re
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+from database.query import query
 
 valid_filters = ("-n", "-ip", "-severity", "-detector", "-since", "-date")
 valid_severity = ("info", "warning", "medium", "high", "critical")
@@ -20,6 +21,8 @@ def execute(command: str):
     filters = {
         "n": None,
         "ip": None,
+        "mac": None,
+        "port": None,
         "severity": None,
         "detector": None,
         "since": None,
@@ -35,7 +38,7 @@ def execute(command: str):
                 #input("DEBUG: Command invalid — stopping")
                 return
         
-    query(filters)
+    pass_filters(filters)
     
 def parse_filter(token: str, filters):
     #input("DEBUG: Parsing filter")
@@ -74,6 +77,18 @@ def parse_filter(token: str, filters):
             error("invalid ip address. Use 'history help' for more information")
             return False
         filters["ip"] = value
+    if filter == "-mac":
+        if parse_mac(value) is False:
+            clear()
+            error("invalid mac address. Use 'history help' for more information")
+            return False
+        filters["mac"] = value
+    if filter == "-port":
+        if parse_port(value) is False:
+            clear()
+            error("invalid port. Use 'history help' for more information")
+            return False
+        filters["port"] = value
     if filter == "-severity":
         if parse_severity(value) is False:
             clear()
@@ -116,6 +131,24 @@ def parse_ip(ip):
     except ValueError:
         return False
     
+def parse_mac(mac):
+    mac = mac.strip()
+
+    # Colon-separated or hyphen-separated
+    pattern1 = r'^([0-9a-f]{2}[:-]){5}([0-9a-f]{2})$'
+    # Dot-separated (Cisco style)
+    pattern2 = r'^([0-9a-f]{4}\.){2}([0-9a-f]{4})$'
+
+    if re.fullmatch(pattern1, mac) or re.fullmatch(pattern2, mac):
+        return True
+    return False
+
+def parse_port(port):
+    try:
+        return 0 <= int(port) <= 65535
+    except ValueError:
+        return False
+    
 def parse_severity(severity):
     return severity in valid_severity
 
@@ -134,13 +167,27 @@ def parse_since(time: str):
     for amount, unit in matches:
         total_seconds += int(amount) * TIME_MULTIPLIERS[unit]
 
-    return total_seconds
+    if total_seconds == 0:
+        return None
+    return f"-{total_seconds} seconds"
 
 def parse_date(date: str):
+    """
+    Convert a local-date string like '2026-04-07' into a (start_utc, end_utc)
+    tuple representing midnight to midnight in the user's local timezone,
+    expressed as UTC strings for the database.
+    """
     try:
-        return datetime.strptime(date, "%Y-%m-%d")
+        local_midnight = datetime.strptime(date, "%Y-%m-%d").astimezone()
     except ValueError:
         return None
+
+    next_local_midnight = local_midnight + timedelta(days=1)
+
+    start_utc = local_midnight.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    end_utc = next_local_midnight.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+    return (start_utc, end_utc)
     
 def parse_command(command: str):
     #input(f"DEBUG: Parsing {command}")
@@ -167,6 +214,18 @@ def help():
     print("\n  \033[94m-ip=ADDR\033[0m")
     print("  └─ Filter detections by IPv4 or IPv6 address.")
     print("     Example: history -ip=192.168.1.10")
+
+    print("\n  \033[94m-mac=ADDR\033[0m")
+    print("  └─ Filter detections by MAC address.")
+    print("     Valid formats:")
+    print("       - Colon-separated: AA:BB:CC:DD:EE:FF")
+    print("       - Hyphen-separated: AA-BB-CC-DD-EE-FF")
+    print("       - Cisco-style dot-separated: AABB.CCDD.EEFF")
+    print("     Example: history -mac=00:1A:2B:3C:4D:5E")
+
+    print("\n  \033[94m-port=NUM\033[0m")
+    print("  └─ Filter detections by port number (0-65535).")
+    print("     Example: history -port=443")
 
     print("\n  \033[94m-severity=LEVEL\033[0m")
     print("  └─ Filter by alert severity.")
@@ -195,12 +254,66 @@ def help():
     print("  history -severity=critical")
     print("  history -ip=10.0.0.5 -since=2h")
     print("  history -detector=arp-spoof -date=2026-04-01")
+    print("  history -mac=00:1A:2B:3C:4D:5E")
+    print("  history -port=443")
 
     print("\n" + "─"*87)
     input("\nPress ENTER to return...")
     clear()
 
 # Query database after command has been returned from execute if command is valid
-def query(filters):
-    input("DEBUG: Valid command")
-    ...
+def pass_filters(filters: dict):
+    n = filters.get("n")
+    ip = filters.get("ip")
+    mac = filters.get("mac")
+    port = filters.get("port")
+    severity = filters.get("severity")
+    detector = filters.get("detector")
+    since = filters.get("since")
+    date = filters.get("date")
+    
+    if detector == "honeyport":
+        detector = "Honey Port"
+    elif detector == "arp-spoof":
+        detector = "ARP Spoof"
+    elif detector == "dns-tunnel":
+        detector = "DNS Tunnel"
+    elif detector == "port-scan":
+        detector = "Port Scan"
+    
+    rows = query(n, ip, mac, port, severity, detector, since, date)
+    print_results(rows)
+    
+def format_timestamp(utc_str):
+    """Convert a SQLite UTC timestamp string to local time for display."""
+    if not utc_str:
+        return ''
+    # SQLite stores as 'YYYY-MM-DD HH:MM:SS' with no timezone info,
+    # but datetime('now') always produces UTC
+    dt_utc = datetime.strptime(utc_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    dt_local = dt_utc.astimezone()  # converts to system local time
+    return dt_local.strftime("%Y-%m-%d %H:%M:%S")
+    
+def print_results(rows):
+    if not rows:
+        print("\nNo detections found.\n")
+        input("Press ENTER to return...")
+        clear()
+        return
+
+    print(f"\n  Found {len(rows)} detection(s):\n")
+    print(f"  {'TIME':<20} {'SEVERITY':<10} {'DETECTOR':<14} {'SRC':<18} {'DST':<18} SUMMARY")
+    print("  " + "─" * 110)
+
+    for row in rows:
+        ts = format_timestamp(row['timestamp'])
+        sev = (row['severity'] or '')[:10]
+        det = (row['detector_type'] or '')[:14]
+        src = f"{row['src_ip'] or '-'}:{row['src_port'] or ''}"[:18]
+        dst = f"{row['dst_ip'] or '-'}:{row['dst_port'] or ''}"[:18]
+        summary = (row['summary'] or '')[:60]
+        print(f"  {ts:<20} {sev:<10} {det:<14} {src:<18} {dst:<18} {summary}")
+
+    print()
+    input("Press ENTER to return...")
+    clear()
