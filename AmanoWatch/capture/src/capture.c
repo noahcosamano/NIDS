@@ -205,8 +205,8 @@ EXPORT int InitCapture(const char* device_name, char* errbuf) { // Device name p
     global_handle = pcap_create(device_name, errbuf);
     pcap_set_snaplen(global_handle, 65535); // The max length of each capture
     pcap_set_promisc(global_handle, 1); // 1 enables promiscuous mode, 0 disables it
-    pcap_set_timeout(global_handle, 1000); // 1000 ms timeout on packet
-    pcap_set_buffer_size(global_handle, 64 * 1024 * 1024); // 64MB buffer
+    pcap_set_timeout(global_handle, 100); // 100 ms timeout on packet
+    pcap_set_buffer_size(global_handle, 256 * 1024 * 1024); // 256MB buffer
     pcap_activate(global_handle);
     // Checks if global_handle opened successfully
     if (global_handle) {
@@ -217,11 +217,12 @@ EXPORT int InitCapture(const char* device_name, char* errbuf) { // Device name p
     return 0;
 }
 
-EXPORT int GetNextPacketCache(packet* packetCache) { // Packet cache passed in by python call
+EXPORT int GetNextPacketCache(packet* packetCache, int max_count) { // Packet cache passed in by python call
     if (!global_handle) return -1; // Double-checks if global handle exists
+    if (max_count <= 0) return 0;
 
     int count = 0;
-    while (count < 50) {
+    while (count < max_count) {
         struct pcap_pkthdr* header; // Initializes empty packet header
         const u_char* pkt_data; // Initializes empty packet data    
         int result = pcap_next_ex(global_handle, &header, &pkt_data); // Gets next packet, fills header and pkt_data
@@ -229,10 +230,12 @@ EXPORT int GetNextPacketCache(packet* packetCache) { // Packet cache passed in b
         if (result == 1) { // Success
             ProcessRawData(header, pkt_data, &packetCache[count]);
             count++;
+        } else if (result == 0) {
+            return count;
+        } else {
+            return (count > 0) ? count : result;
         }
-        else {
-            return result;
-        }
+
     }
     return count;
 }
