@@ -54,27 +54,27 @@ int IsQUIC(packet* p) { // Returns 1 if packet is QUIC, 0 otherwise
 }
 
 int IsDNS(packet* p) { // Returns 1 if packet is DNS, 0 otherwise
-    if (!p) return 0;
+    if (!p || p->payload == NULL || p->payload_len < 12) return 0;
 
-    // 1. Check if it's UDP or TCP
-    if (p->protocol != 17 && p->protocol != 6) {
-        p->app_protocol = 206;
-        return 0;
-    }
+    // Port validation first
+    int is_dns_port = (p->src_port == 53 || p->dst_port == 53 ||
+                       p->src_port == 5353 || p->dst_port == 5353);
 
-    // 2. Check for Standard DNS (Port 53)
-    if (p->src_port == 53 || p->dst_port == 53) {
-        p->app_protocol = 206;
-        return 1;
-    }
+    if (!is_dns_port) return 0;
 
-    // 3. Check for mDNS (Port 5353) - Strictly UDP
-    if (p->protocol == 17 && (p->src_port == 5353 || p->dst_port == 5353)) {
-        p->app_protocol = 207;
-        return 1;
-    }
+    // Heuristic validation next
+    // DNS headers have specific flags at offset 2 and 3
+    const uint8_t* dns = p->payload;
 
-    return 0;
+    // Check if question count is > 0
+    uint16_t q_count = (dns[4] << 8) | dns[5]; // DNS is big endian, questions at payload[4] and [5]
+
+    if (q_count == 0 || q_count > 20) return 0; // Likely SSDP or random UDP
+
+    if (p->src_port == 5353 || p->dst_port == 5353) p->app_protocol = 207; // MDNS
+    else p->app_protocol = 206; // Regular DNS
+
+    return 1;
 }
 
 int IsTELNET(packet* p) {
