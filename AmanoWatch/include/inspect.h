@@ -325,3 +325,68 @@ int IsPOP3(packet* p) {
     }
     return 0;
 }
+
+int IsLLMNR(packet* p) {
+    // LLMNR runs on UDP port 5355 (and TCP, but almost never in practice)
+    if (!p || p->protocol != 17 || p->payload == NULL || p->payload_len < 12) {
+        return 0;
+    }
+
+    if (p->src_port != 5355 && p->dst_port != 5355) return 0;
+
+    const uint8_t* data = p->payload;
+
+    // Header layout mirrors DNS exactly. Opcode bits 14-11 of the flags
+    // word (byte 2) must be 0, same check as IsDNS
+    uint8_t flags_hi = data[2];
+    if ((flags_hi & 0x78) != 0) return 0;
+
+    uint16_t q_count = (data[4] << 8) | data[5];
+    if (q_count == 0 || q_count > 20) return 0;
+
+    p->app_protocol = 221;
+    return 1;
+}
+
+int IsIGMPV2(packet* p) {
+    // IGMP sits directly on IP (protocol 2), no transport header
+    if (!p || p->protocol != 2 || p->payload == NULL || p->payload_len < 8) {
+        return 0;
+    }
+
+    const uint8_t* data = p->payload;
+
+    // IGMPv2 message types:
+    // 0x11 = Membership Query
+    // 0x16 = Membership Report
+    // 0x17 = Leave Group
+    if (data[0] != 0x11 && data[0] != 0x16 && data[0] != 0x17) return 0;
+
+    // Byte 1 is Max Response Time — valid range is 0-255, no filtering needed
+    // Bytes 2-3 are the checksum, bytes 4-7 are the group address
+
+    p->app_protocol = 222;
+    return 1;
+}
+
+int IsSSDP(packet* p) {
+    // SSDP uses UDP port 1900, multicast to 239.255.255.250
+    if (!p || p->protocol != 17 || p->payload == NULL || p->payload_len < 16) {
+        return 0;
+    }
+
+    if (p->src_port != 1900 && p->dst_port != 1900) return 0;
+
+    const uint8_t* data = p->payload;
+
+    // SSDP is plaintext HTTP-like. Requests start with a method,
+    // responses start with "HTTP/"
+    if (memcmp(data, "M-SEARCH", 8) == 0 ||
+        memcmp(data, "NOTIFY", 6) == 0 ||
+        memcmp(data, "HTTP/", 5) == 0) {
+        p->app_protocol = 223;
+        return 1;
+    }
+
+    return 0;
+}

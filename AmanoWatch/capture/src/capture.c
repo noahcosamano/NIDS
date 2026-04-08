@@ -146,6 +146,12 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
         else if (IsNFS(p)) {}
         else if (IsSNMP(p)) {}
         else if (IsDHCP(p)) {}
+        else if (IsLLMNR(p)) {}
+        else if (IsSSDP(p)) {}
+    }
+
+    else if (p->protocol == 2) {  // IGMP sits directly on IP
+        IsIGMPV2(p);
     }
 }
 

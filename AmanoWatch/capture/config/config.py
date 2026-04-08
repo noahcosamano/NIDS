@@ -63,4 +63,6 @@ udp_service_ports = {
     213: "NFS",
     216: "SNMP",
     217: "DHCP",
+    221: "LLMNR",
+    223: "SSDP"
 }
