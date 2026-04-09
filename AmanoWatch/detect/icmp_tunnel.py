@@ -89,7 +89,8 @@ class IcmpTunnel:
             packet.dst_ip, dst_mac=
             packet.dst_mac, dst_port=
             packet.dst_port, details=
-            details)
+            details
+        )
         
 def detect_icmp_tunnel(packet_queue, stop_event, cli_ready, alert_callback=None):
     detector = IcmpTunnel(alert_callback=alert_callback)
