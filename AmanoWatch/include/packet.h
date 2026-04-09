@@ -25,7 +25,7 @@ typedef struct {
     long long tv_usec;
     
     uint32_t payload_len;
-    const uint8_t* payload;
+    uint8_t payload[1500];
 } packet;
 
 struct eth_header {

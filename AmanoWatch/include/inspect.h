@@ -4,7 +4,7 @@
 // IsHTTPS owns 443, IsTLS owns everything else (e.g. 8443, STARTTLS, etc.)
 
 int IsTLS(packet* p) {
-    if (!p || p->protocol != 6 || p->payload == NULL || p->payload_len < 5) {
+    if (!p || p->protocol != 6 || p->payload_len < 5) {
         return 0;
     }
 
@@ -25,7 +25,7 @@ int IsTLS(packet* p) {
 }
 
 int IsQUIC(packet* p) {
-    if (!p || p->protocol != 17 || p->payload == NULL || p->payload_len < 5) {
+    if (!p || p->protocol != 17 || p->payload_len < 5) {
         return 0;
     }
 
@@ -51,7 +51,7 @@ int IsQUIC(packet* p) {
 }
 
 int IsDNS(packet* p) {
-    if (!p || p->payload == NULL || p->payload_len < 12) return 0;
+    if (!p || p->payload_len < 12) return 0;
 
     int is_dns_port = (p->src_port == 53 || p->dst_port == 53 ||
         p->src_port == 5353 || p->dst_port == 5353);
@@ -76,7 +76,7 @@ int IsDNS(packet* p) {
 }
 
 int IsTELNET(packet* p) {
-    if (!p || p->protocol != 6 || p->payload == NULL || p->payload_len < 1) {
+    if (!p || p->protocol != 6 || p->payload_len < 1) {
         return 0;
     }
 
@@ -92,7 +92,7 @@ int IsTELNET(packet* p) {
 }
 
 int IsFTP(packet* p) {
-    if (!p || p->protocol != 6 || p->payload == NULL || p->payload_len < 3) {
+    if (!p || p->protocol != 6 || p->payload_len < 3) {
         return 0;
     }
 
@@ -109,7 +109,7 @@ int IsFTP(packet* p) {
 }
 
 int IsTFTP(packet* p) {
-    if (!p || p->protocol != 17 || p->payload == NULL || p->payload_len < 4) {
+    if (!p || p->protocol != 17 || p->payload_len < 4) {
         return 0;
     }
 
@@ -127,7 +127,7 @@ int IsTFTP(packet* p) {
 }
 
 int IsNFS(packet* p) {
-    if (!p || p->payload == NULL || p->payload_len < 24) {
+    if (!p || p->payload_len < 24) {
         return 0;
     }
 
@@ -162,7 +162,7 @@ int IsNFS(packet* p) {
 }
 
 int IsSMTP(packet* p) {
-    if (!p || p->protocol != 6 || p->payload == NULL || p->payload_len < 4) {
+    if (!p || p->protocol != 6 || p->payload_len < 4) {
         return 0;
     }
 
@@ -185,7 +185,7 @@ int IsSMTP(packet* p) {
 }
 
 int IsLPD(packet* p) {
-    if (!p || p->protocol != 6 || p->payload == NULL || p->payload_len < 2) {
+    if (!p || p->protocol != 6 || p->payload_len < 2) {
         return 0;
     }
 
@@ -204,7 +204,7 @@ int IsLPD(packet* p) {
 }
 
 int IsSNMP(packet* p) {
-    if (!p || p->protocol != 17 || p->payload == NULL || p->payload_len < 8) {
+    if (!p || p->protocol != 17 || p->payload_len < 8) {
         return 0;
     }
 
@@ -234,7 +234,7 @@ int IsSNMP(packet* p) {
 }
 
 int IsDHCP(packet* p) {
-    if (!p || p->protocol != 17 || p->payload == NULL || p->payload_len < 240) {
+    if (!p || p->protocol != 17 || p->payload_len < 240) {
         return 0;
     }
 
@@ -255,7 +255,7 @@ int IsDHCP(packet* p) {
 }
 
 int IsHTTP(packet* p) {
-    if (!p || p->protocol != 6 || p->payload == NULL || p->payload_len < 4) {
+    if (!p || p->protocol != 6 || p->payload_len < 4) {
         return 0;
     }
 
@@ -286,7 +286,7 @@ int IsHTTP(packet* p) {
 }
 
 int IsHTTPS(packet* p) {
-    if (!p || p->protocol != 6 || p->payload == NULL || p->payload_len < 5) {
+    if (!p || p->protocol != 6 || p->payload_len < 5) {
         return 0;
     }
 
@@ -305,7 +305,7 @@ int IsHTTPS(packet* p) {
 }
 
 int IsPOP3(packet* p) {
-    if (!p || p->protocol != 6 || p->payload == NULL || p->payload_len < 4) {
+    if (!p || p->protocol != 6 || p->payload_len < 4) {
         return 0;
     }
 
@@ -328,7 +328,7 @@ int IsPOP3(packet* p) {
 
 int IsLLMNR(packet* p) {
     // LLMNR runs on UDP port 5355 (and TCP, but almost never in practice)
-    if (!p || p->protocol != 17 || p->payload == NULL || p->payload_len < 12) {
+    if (!p || p->protocol != 17 || p->payload_len < 12) {
         return 0;
     }
 
@@ -350,7 +350,7 @@ int IsLLMNR(packet* p) {
 
 int IsIGMPV2(packet* p) {
     // IGMP sits directly on IP (protocol 2), no transport header
-    if (!p || p->protocol != 2 || p->payload == NULL || p->payload_len < 8) {
+    if (!p || p->protocol != 2 || p->payload_len < 8) {
         return 0;
     }
 
@@ -371,7 +371,7 @@ int IsIGMPV2(packet* p) {
 
 int IsSSDP(packet* p) {
     // SSDP uses UDP port 1900, multicast to 239.255.255.250
-    if (!p || p->protocol != 17 || p->payload == NULL || p->payload_len < 16) {
+    if (!p || p->protocol != 17 || p->payload_len < 16) {
         return 0;
     }
 

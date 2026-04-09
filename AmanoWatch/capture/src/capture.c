@@ -29,7 +29,6 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
     // Total time is the sum of tv_sec and tv_usec
     p->tv_sec = (long long)header->ts.tv_sec; // Seconds
     p->tv_usec = (long long)header->ts.tv_usec; // Microseconds
-    p->payload = NULL;     // Explicitly nullify so error doesnt occur
     p->payload_len = 0;
     p->app_protocol = 0;
 
@@ -87,9 +86,11 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
             p->src_port = icmp6->type;
             p->dst_port = icmp6->code;
 
-            p->payload = pkt_data + transport_offset + 8;
             p->payload_len = (header->caplen > (uint32_t)(transport_offset + 8)) ?
                 header->caplen - (transport_offset + 8) : 0;
+            if (p->payload_len > sizeof(p->payload))
+                p->payload_len = sizeof(p->payload);
+            memcpy(p->payload, pkt_data + transport_offset + 8, p->payload_len);
 
             return;
         }
@@ -114,9 +115,12 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
         p->dst_port = ntohs(tcp->dst_port);
         p->tcp_flags = tcp->flags;
         int tcp_len = (tcp->offx2 >> 4) * 4; // Gets length of TCP header in bytes
-        p->payload = pkt_data + transport_offset + tcp_len; // If applicable, gets payload
+
         p->payload_len = (header->caplen > (uint32_t)(transport_offset + tcp_len)) ?
             header->caplen - (transport_offset + tcp_len) : 0;
+        if (p->payload_len > sizeof(p->payload))
+            p->payload_len = sizeof(p->payload);
+        memcpy(p->payload, pkt_data + transport_offset + tcp_len, p->payload_len);
 
         // The functions below take a TCP packet and inspect payload to check for application protocol
         if (IsTLS(p)) {}
@@ -135,9 +139,11 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
         struct udp_header* udp = (struct udp_header*)(pkt_data + transport_offset);
         p->src_port = ntohs(udp->src_port);
         p->dst_port = ntohs(udp->dst_port);
-        p->payload = pkt_data + transport_offset + 8;
         p->payload_len = (header->caplen > (uint32_t)(transport_offset + 8)) ?
             header->caplen - (transport_offset + 8) : 0;
+        if (p->payload_len > sizeof(p->payload))
+            p->payload_len = sizeof(p->payload);
+        memcpy(p->payload, pkt_data + transport_offset + 8, p->payload_len);
 
         // The functions below take a UDP packet and inspect payload to check for application protocol
         if (IsQUIC(p)) {}
@@ -160,9 +166,11 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
         p->src_port = icmp->type;
         p->dst_port = icmp->code;
 
-        p->payload = pkt_data + transport_offset + 8;
         p->payload_len = (header->caplen > (uint32_t)(transport_offset + 8)) ?
             header->caplen - (transport_offset + 8) : 0;
+        if (p->payload_len > sizeof(p->payload))
+            p->payload_len = sizeof(p->payload);
+        memcpy(p->payload, pkt_data + transport_offset + 8, p->payload_len);
     }
 }
 
