@@ -24,10 +24,10 @@ class DnsTunnel:
         self.alert_callback = alert_callback
 
     def process_packet(self, packet: PyPacket):
-        if not packet.query:
+        if not packet.payload:
             return
 
-        domain = self._parse_dns_name(packet.query)
+        domain = self._parse_dns_name(packet.payload)
         if not domain:
             return
 

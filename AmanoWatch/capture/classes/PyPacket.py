@@ -18,8 +18,8 @@ class PyPacket:
     src_port: Optional[int]    
     dst_port: Optional[int]
     flags: Optional[str]       # Used to detect different types of TCP scans (ie. SYN, XMAS, NULL, etc.)
-    query: Optional[bytes]     # Used to detect DNS tunneling via string entropy
-    query_len: Optional[int]
+    payload: Optional[bytes]     # Used to detect DNS tunneling via string entropy
+    payload_len: Optional[int]
     timestamp: float
      
     def __str__(self):

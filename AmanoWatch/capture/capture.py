@@ -36,7 +36,6 @@ def _route(arp_q, dns_q, honey_q, fast_q, slow_q, icmp_q, cli_q,
     if proto == "ARP":
         arp_q.put(packet)
     elif proto == "DNS":
-        print(f"[DNS] src={packet.src_ip}:{packet.src_port} dst={packet.dst_ip}:{packet.dst_port} app_proto={getattr(packet, 'app_protocol', '?')} len={len(packet.query) if packet.query else 0}")
         dns_q.put(packet)
     elif proto in ("TCP", "UDP"):
         fast_q.put(packet)
