@@ -22,5 +22,5 @@ class CPacket(ctypes.Structure):
         ("tv_sec", ctypes.c_longlong),
         ("tv_usec", ctypes.c_longlong),
         ("payload_len", ctypes.c_uint32),
-        ("payload", ctypes.POINTER(ctypes.c_uint8)),
+        ("payload", ctypes.c_ubyte * 1500),
     ]
