@@ -44,9 +44,6 @@ class IcmpTunnel:
             print(f"DEBUG: IP or payload missing")
             return
         
-        payload_len = len(packet.payload)
-        print(f"DEBUG: Payload length: {payload_len}")
-        
         if packet.src_ip not in self.activity:
             self.activity[packet.src_ip] = _SourceState(packet.src_ip)
         source_state: _SourceState = self.activity[packet.src_ip]
@@ -67,7 +64,7 @@ class IcmpTunnel:
             self.detected("critical", packet, source_state)
         
     def detected(self, severity, packet: PyPacket, source_state: _SourceState):
-        summary = f"Packet(s) from {source_state.ip} may contain suspicious payload(s)"
+        summary = f"ICMP packet(s) from {source_state.ip} may contain suspicious payload(s)"
         details = f"Calculated risk: {source_state.risk}\nPayloads:\n"
         for pkt in source_state.packets:
             details += f"Time: {pkt.timestamp} | Payload: {pkt.payload}\n"

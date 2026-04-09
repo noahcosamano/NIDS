@@ -75,10 +75,23 @@ class PacketDetailDialog(QDialog):
         layout.addWidget(row("FLAGS",     getattr(pkt,'flags',   '—'), ORANGE))
         layout.addWidget(row("TYPE", getattr(pkt,'type',    '—'), YELLOW))
 
-        query = getattr(pkt, 'query', None)
-        if query:
-            try:    qstr = ' '.join(f'{b:02X}' for b in query)
-            except: qstr = repr(query)
+        payload = getattr(pkt, 'payload', None)
+        payload = getattr(pkt, 'payload', None)
+        if payload:
+            try:
+                # Try to decode as UTF-8 first. most app-layer payloads are text
+                text = payload.decode('utf-8', errors='replace')
+                # Replace non-printable control chars with dots, keep newlines/tabs
+                cleaned = ''.join(
+                    c if (c.isprintable() or c in '\n\t') else '·'
+                    for c in text
+                )
+                # Cap length so a huge packet doesn't blow up the dialog
+                if len(cleaned) > 1500:
+                    cleaned = cleaned[:1500] + f"\n\n... ({len(payload)} bytes total, truncated)"
+                qstr = cleaned
+            except Exception:
+                qstr = repr(payload[:200])
             layout.addWidget(row("PAYLOAD", qstr, GREEN))
 
         layout.addStretch()
@@ -303,11 +316,11 @@ class StreamPanel(QWidget):
         dst_p   = str(getattr(pkt, 'dst_port', '') or '')
         flags   = getattr(pkt, 'flags',    '') or ''
         ts      = _fmt_ts(getattr(pkt, 'timestamp', 0))
-        query   = getattr(pkt, 'query', None)
+        payload   = getattr(pkt, 'payload', None)
         info    = ""
-        if query:
-            try:    info = query.decode('utf-8', errors='replace')
-            except: info = repr(query)
+        if payload:
+            try:    info = payload.decode('utf-8', errors='replace')
+            except: info = repr(payload)
 
         self._table.insertRow(0)
         self._table.setItem(0, 0, _item(ts,     TEXT_DIM))

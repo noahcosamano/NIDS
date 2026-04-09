@@ -95,19 +95,19 @@ def main():
         ports.append(num)
     
     # ARP Spoof
-    send_arp(DST_IP, SRC_IP, "aa:bb:cc:dd:ee:ff", 1) # Initialize ARP
-    send_arp(DST_IP, SRC_IP, "bb:bb:cc:dd:ee:ff", 1) # Change ARP
+    #send_arp(DST_IP, SRC_IP, "aa:bb:cc:dd:ee:ff", 1) # Initialize ARP
+    #send_arp(DST_IP, SRC_IP, "bb:bb:cc:dd:ee:ff", 1) # Change ARP
     
     # Honeyport
-    send_packet("TCP", DST_IP, SRC_IP, 9999, 21, None, None, 1)  # FTP honeyport
-    send_packet("TCP", DST_IP, SRC_IP, 9999, 23, None, None, 1)  # Telnet honeyport (port 23!)
+    #send_packet("TCP", DST_IP, SRC_IP, 9999, 21, None, None, 1)  # FTP honeyport
+    #send_packet("TCP", DST_IP, SRC_IP, 9999, 23, None, None, 1)  # Telnet honeyport (port 23!)
     
     # DNS Tunnel
-    send_dns(3) # DNS Tunnel
+    send_dns(10)
     
     # SYN Scan
-    send_port_scan(ports, "S") # SYN scan
-    send_port_scan(ports, "F") # FIN scan
-    send_port_scan(ports, "FPU") # FIN scan
+    #send_port_scan(ports, "S") # SYN scan
+    #send_port_scan(ports, "F") # FIN scan
+    #send_port_scan(ports, "FPU") # FIN scan
 
 main()

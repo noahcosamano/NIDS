@@ -2,77 +2,140 @@ from capture.classes.PyPacket import PyPacket
 from detect.config import DNS_WHITELIST
 from database.edit import add_detection
 import math
+import time
 from collections import Counter
 
 
+class _SourceState:
+    def __init__(self, ip):
+        self.ip = ip
+        self.entries = []   # list of dicts: {packet, subdomain_len, entropy, timestamp}
+        self.risk = 0.0
+
+    def add(self, packet: PyPacket, subdomain_len: int, entropy: float):
+        self.entries.append({
+            "packet": packet,
+            "subdomain_len": subdomain_len,
+            "entropy": entropy,
+            "timestamp": packet.timestamp,
+        })
+
+    def clean(self, interval: int):
+        cutoff = time.time() - interval
+        self.entries = [e for e in self.entries if e["timestamp"] >= cutoff] # Clears entries of packets not in time frame anymore
+
+    @property
+    def packet_count(self) -> int:
+        return len(self.entries)
+
+    def calculate_risk(self):
+        """
+        Example:
+            Subdomain Length: 100
+            Entropy: 2.0
+            Packets: 20
+                len_score = 8
+                ent_score = 2
+                peak = 10
+                suspicious count = 20
+                volume bonus = 9.5
+            risk = 19.5
+            
+            Subdomain Length: 160
+            Entropy: 4.85
+            Packets: 1
+                len_score = 14
+                ent_score = 4.85
+                peak = 18.85
+                suspicious count = 1
+                volume bonus = 0
+            risk = 18.85
+        """
+        if not self.entries:
+            self.risk = 0.0
+            return
+
+        scores = [] # List of floats, each float is the score of each packet
+        for e in self.entries: # Each entry is a packet and its corresponding subdomain/entropy
+            len_score = max(0, (e["subdomain_len"] - 20) * 0.1) # Max so the score cannot be negative
+            ent_score = e["entropy"]
+            scores.append(len_score + ent_score)
+
+        peak = max(scores)
+        suspicious_count = sum(1 for s in scores if s >= 5.0) # Scores above 5 are considered suspiscious
+        volume_bonus = max(0, (suspicious_count - 1) * 0.5) # Max so volume bonus cannot be negative, this tracks the amount of "bad packets"
+
+        self.risk = peak + volume_bonus # Risk is a calculation of the worst packet, and the amount of "bad packets" put together
+
 class DnsTunnel:
-    """
-    DNS tunneling detector.
-
-    A DNS tunnel encodes data into subdomain labels, so tunneled queries have
-    two telltale signatures:
-      1. Unusually long subdomains (normal DNS is < 30 chars)
-      2. High entropy in those subdomains (encoded data looks random)
-
-    We score each query on length and entropy independently, then combine
-    into a single risk value. Thresholds are tuned for base32/base64-encoded
-    payloads which hover around 4.5-5.0 bits of entropy.
-    """
-
-    def __init__(self, packet_queue, alert_callback=None):
-        self.packet_queue = packet_queue
+    def __init__(self, interval=60, cooldown=30, alert_callback=None):
         self.alert_callback = alert_callback
+        self.interval = interval
+        self.cooldown = cooldown
+        self.activity = {}       # src_ip -> _SourceState
+        self.last_alert = {}     # src_ip -> timestamp
 
     def process_packet(self, packet: PyPacket):
-        if not packet.payload:
+        print(f"DEBUG: Processing IP: {packet.src_ip}")
+        if not packet.payload or not packet.src_ip:
             return
 
         domain = self._parse_dns_name(packet.payload)
+        
+        print(f"DEBUG: {packet.src_ip} name parsed")
         if not domain:
+            print(f"DEBUG: {packet.src_ip} domain not found")
             return
+        if domain.endswith(".local") or domain.endswith(".arpa"):
+            print(f"DEBUG: {packet.src_ip} is local")
+            return
+        if any(domain.endswith(trusted) for trusted in DNS_WHITELIST):
+            print(f"DEBUG: {packet.src_ip} on whitelist")
+            return
+        
+        print(f"DEBUG: {packet.src_ip} domain retrieved")
 
         subdomain = self._subdomain(domain)
         if not subdomain:
             return
 
-        # local and arpa traffic are fine
-        if domain.endswith(".local") or domain.endswith(".arpa"):
-            return
-        # whitelist in config.py
-        if any(domain.endswith(trusted) for trusted in DNS_WHITELIST):
-            return
-
-        # Strip dots when measuring — a 6-label subdomain shouldn't get penalized for having dots in it
         subdomain_no_dots = subdomain.replace(".", "")
         if not subdomain_no_dots:
             return
+        
+        print(f"DEBUG: {packet.src_ip} subdomain retrieved")
 
         sub_len = len(subdomain_no_dots)
         entropy = self._entropy(subdomain_no_dots)
+        
+        print(f"DEBUG: IP: {packet.src_ip} | Subdomain Length: {sub_len} | Entropy: {entropy}")
 
-        # Score: length and entropy each contribute. Normal domains are short
-        # and low entropy; tunnels are long and high entropy.
-        #
-        #   len_score:  0 at len<=20, scales up to ~5 at len=100
-        #   ent_score:  entropy bits directly (normal DNS ~2.5, tunnel ~4.5+)
-        #
-        # A normal query like "mail.google.com" scores ~2.5 + 0 = 2.5
-        # A tunneled query scores ~4.7 + 4 = 8.7
-        len_score = max(0, (sub_len - 20) * 0.1)
-        ent_score = entropy
-        risk = len_score + ent_score
+        src = packet.src_ip
+        state = self.activity.get(src)
+        if state is None:
+            state = _SourceState(src)
+            self.activity[src] = state
+
+        state.add(packet, sub_len, entropy)
+        state.clean(self.interval)
+        state.calculate_risk()
 
         severity = None
-        if risk >= 8.0:
+        if state.risk >= 8.0:
             severity = "critical"
-        elif risk >= 6.5:
+        elif state.risk >= 6.5:
             severity = "high"
-        elif risk >= 5.5:
+        elif state.risk >= 5.5:
             severity = "medium"
         else:
             return
 
-        self._alert(packet, domain, sub_len, entropy, risk, severity)
+        now = time.time()
+        if now - self.last_alert.get(src, 0) < self.cooldown:
+            return
+        self.last_alert[src] = now
+
+        self._detected(severity, packet, domain, sub_len, entropy, state)
 
     def _subdomain(self, domain: str) -> str:
         """Return everything left of the registered domain (last two labels)."""
@@ -100,12 +163,13 @@ class DnsTunnel:
         length-prefixed labels terminated by a zero byte.
         """
         if not payload or len(payload) < 13:
+            print(f"[parse] too short: len={len(payload) if payload else 0}")
             return ""
 
         try:
             parts = []
-            i = 12  # skip DNS header
-            max_iterations = 128  # safety bound against malformed packets
+            i = 12
+            max_iterations = 128
 
             while i < len(payload) and max_iterations > 0:
                 max_iterations -= 1
@@ -113,37 +177,56 @@ class DnsTunnel:
 
                 if length == 0:
                     break
-                if length > 63:  # labels max at 63 bytes
+                if length > 63:
+                    print(f"[parse] label too long at offset {i}: length={length}, first_bytes={payload[:20].hex()}")
                     return ""
                 if i + 1 + length > len(payload):
-                    return ""  # truncated
+                    print(f"[parse] truncated at offset {i}: need {length}, have {len(payload) - i - 1}")
+                    return ""
 
                 label = payload[i + 1 : i + 1 + length]
-                # Strict ASCII check — any non-printable byte means this
-                # isn't a valid DNS label and we shouldn't pretend it is
                 try:
                     decoded = label.decode("ascii")
                 except UnicodeDecodeError:
+                    print(f"[parse] bad unicode in label: {label!r}")
                     return ""
                 if not all(32 <= b < 127 for b in label):
+                    print(f"[parse] non-printable bytes in label: {label!r}")
                     return ""
 
                 parts.append(decoded)
                 i += 1 + length
 
             return ".".join(parts)
-        except Exception:
+        except Exception as e:
+            print(f"[parse] exception: {e}")
             return ""
 
-    def _alert(self, packet: PyPacket, domain: str, sub_len: int,
-               entropy: float, risk: float, severity: str):
-        summary = f"{packet.src_ip} queried suspicious domain (possible DNS tunnel)"
+    def _detected(self, severity: str, packet: PyPacket, domain: str,
+                  sub_len: int, entropy: float, state: _SourceState):
+        summary = (
+            f"{packet.src_ip} queried suspicious domain "
+            f"(possible DNS tunnel, risk {state.risk:.2f})"
+        )
+
         details = (
-            f"Domain: {domain}\n"
+            f"Source: {packet.src_ip}\n"
+            f"Triggering domain: {domain[:100]}\n"
             f"Subdomain length: {sub_len}\n"
             f"Entropy: {entropy:.2f} bits\n"
-            f"Risk score: {risk:.2f}"
+            f"Risk score: {state.risk:.2f}\n"
+            f"Queries in window: {state.packet_count}\n"
+            f"Recent queries:\n"
         )
+        for entry in state.entries[-10:]:
+            p = entry["packet"]
+            q_domain = self._parse_dns_name(p.payload) if p.payload else "?"
+            details += (
+                f"  {time.ctime(entry['timestamp'])} | "
+                f"len={entry['subdomain_len']} | "
+                f"ent={entry['entropy']:.2f} | "
+                f"{q_domain[:80]}\n"
+            )
 
         if self.alert_callback:
             self.alert_callback(
@@ -167,7 +250,7 @@ class DnsTunnel:
 
 
 def detect_dns_tunnel(packet_queue, stop_event, cli_ready, alert_callback=None):
-    detector = DnsTunnel(packet_queue, alert_callback=alert_callback)
+    detector = DnsTunnel(alert_callback=alert_callback)
 
     while not stop_event.is_set() and cli_ready.is_set():
         packet = packet_queue.get()

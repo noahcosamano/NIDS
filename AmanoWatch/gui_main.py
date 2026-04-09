@@ -5,8 +5,6 @@ Requires: pip install PyQt6
 """
 
 import sys
-import threading
-import queue
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt
 from gui.main_window import MainWindow
