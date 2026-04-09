@@ -153,6 +153,17 @@ void ProcessRawData(const struct pcap_pkthdr* header, const u_char* pkt_data, pa
     else if (p->protocol == 2) {  // IGMP sits directly on IP
         IsIGMPV2(p);
     }
+
+    else if (p->protocol == 1) { // ICMP (IPv4)
+        struct icmp_header* icmp = (struct icmp_header*)(pkt_data + transport_offset);
+
+        p->src_port = icmp->type;
+        p->dst_port = icmp->code;
+
+        p->payload = pkt_data + transport_offset + 8;
+        p->payload_len = (header->caplen > (uint32_t)(transport_offset + 8)) ?
+            header->caplen - (transport_offset + 8) : 0;
+    }
 }
 
 EXPORT int GetStats(struct pcap_stat* stats) { // Gets stats of packet capture e.g. packets captured, packet loss, etc.
