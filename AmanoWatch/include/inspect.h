@@ -222,7 +222,7 @@ int IsSNMP(packet* p) {
         //   [4] 0x00/01/03 version: 0=SNMPv1, 1=SNMPv2c, 3=SNMPv3
         //
         // If [1] >= 0x80 it's long-form encoding, where [2] is another length byte
-        // not the INTEGER tag — skipping those packets avoids a false positive
+        // not the INTEGER tag ï¿½ skipping those packets avoids a false positive
         if (data[0] == 0x30 && data[1] < 0x80 &&
             data[2] == 0x02 && data[3] == 0x01 &&
             (data[4] == 0x00 || data[4] == 0x01 || data[4] == 0x03)) {
@@ -296,7 +296,7 @@ int IsHTTPS(packet* p) {
 
     const uint8_t* data = p->payload;
 
-    // Same TLS record header as IsTLS — port is the only thing separating the two
+    // Same TLS record header as IsTLS ï¿½ port is the only thing separating the two
     if (data[0] == 0x16 && data[1] == 0x03 && data[2] >= 0x01 && data[2] <= 0x03) {
         p->app_protocol = 219;
         return 1;
@@ -362,7 +362,7 @@ int IsIGMPV2(packet* p) {
     // 0x17 = Leave Group
     if (data[0] != 0x11 && data[0] != 0x16 && data[0] != 0x17) return 0;
 
-    // Byte 1 is Max Response Time — valid range is 0-255, no filtering needed
+    // Byte 1 is Max Response Time ï¿½ valid range is 0-255, no filtering needed
     // Bytes 2-3 are the checksum, bytes 4-7 are the group address
 
     p->app_protocol = 222;

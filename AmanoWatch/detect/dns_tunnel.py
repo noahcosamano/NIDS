@@ -76,24 +76,17 @@ class DnsTunnel:
         self.last_alert = {}     # src_ip -> timestamp
 
     def process_packet(self, packet: PyPacket):
-        print(f"DEBUG: Processing IP: {packet.src_ip}")
         if not packet.payload or not packet.src_ip:
             return
 
         domain = self._parse_dns_name(packet.payload)
         
-        print(f"DEBUG: {packet.src_ip} name parsed")
         if not domain:
-            print(f"DEBUG: {packet.src_ip} domain not found")
             return
         if domain.endswith(".local") or domain.endswith(".arpa"):
-            print(f"DEBUG: {packet.src_ip} is local")
             return
         if any(domain.endswith(trusted) for trusted in DNS_WHITELIST):
-            print(f"DEBUG: {packet.src_ip} on whitelist")
             return
-        
-        print(f"DEBUG: {packet.src_ip} domain retrieved")
 
         subdomain = self._subdomain(domain)
         if not subdomain:
@@ -102,13 +95,9 @@ class DnsTunnel:
         subdomain_no_dots = subdomain.replace(".", "")
         if not subdomain_no_dots:
             return
-        
-        print(f"DEBUG: {packet.src_ip} subdomain retrieved")
 
         sub_len = len(subdomain_no_dots)
         entropy = self._entropy(subdomain_no_dots)
-        
-        print(f"DEBUG: IP: {packet.src_ip} | Subdomain Length: {sub_len} | Entropy: {entropy}")
 
         src = packet.src_ip
         state = self.activity.get(src)
@@ -163,7 +152,6 @@ class DnsTunnel:
         length-prefixed labels terminated by a zero byte.
         """
         if not payload or len(payload) < 13:
-            print(f"[parse] too short: len={len(payload) if payload else 0}")
             return ""
 
         try:
@@ -178,20 +166,16 @@ class DnsTunnel:
                 if length == 0:
                     break
                 if length > 63:
-                    print(f"[parse] label too long at offset {i}: length={length}, first_bytes={payload[:20].hex()}")
                     return ""
                 if i + 1 + length > len(payload):
-                    print(f"[parse] truncated at offset {i}: need {length}, have {len(payload) - i - 1}")
                     return ""
 
                 label = payload[i + 1 : i + 1 + length]
                 try:
                     decoded = label.decode("ascii")
                 except UnicodeDecodeError:
-                    print(f"[parse] bad unicode in label: {label!r}")
                     return ""
                 if not all(32 <= b < 127 for b in label):
-                    print(f"[parse] non-printable bytes in label: {label!r}")
                     return ""
 
                 parts.append(decoded)
@@ -199,7 +183,6 @@ class DnsTunnel:
 
             return ".".join(parts)
         except Exception as e:
-            print(f"[parse] exception: {e}")
             return ""
 
     def _detected(self, severity: str, packet: PyPacket, domain: str,
