@@ -1,64 +1,84 @@
-# **IMPORTANT:** Make Sure to run as administator ie. sudo as some features require admin
+> **⚠️ Important:** AmanoWatch requires elevated privileges. Run as Administrator.
 
 # AmanoWatch 🦉
-![Image Description](AmanoWatch/assets/amano-watch-logo.png)
+
+![AmanoWatch Logo](AmanoWatch/assets/amano-watch-logo.png)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Status](https://img.shields.io/badge/Status-In--Development-orange)]()
 
-**AmanoWatch** is a simple open-source homemade Intrusion Detection System custom detection for, but not limited to: various port scan types,
-ICMP ping sweeps, ARP spoofing, and DNS tunneling. **AmanoWatch** also features a light-weight interface to filter and view network traffic via port/protocol. 
-designed for Network Enthusiasts, Penetration Testers, and Security Professionals.
+**AmanoWatch** is an open-source Intrusion Detection System built for network enthusiasts, penetration testers, and security professionals. It provides real-time detection of threats including port scans, ARP scans, ICMP ping sweeps, ARP spoofing, DNS tunneling, ICMP tunneling, and honeyport connections — alongside a lightweight interface to filter and view live and historical network traffic.
 
 ---
 
 ## ✨ Features
 
-* **Real-time Monitoring:** Detection for, but not limited to: various port scans, ICMP sweeps, ARP spoofing, and DNS tunneling.
-* **Customizable UI:** Allows users to filter and view network traffic by protocol, port, and interface.
-* **Lightweight & Fast:** Multithreading creates a lightweight and memory efficient solution by preventing race conditions.
-* **Logging:** Seamlessely incorporates a discord webhook in order to log directly to servers/text channels, providing a response solution.
+- **Real-Time Threat Detection** — Identifies port scans, ARP scans, ICMP sweeps, ARP spoofing, DNS/ICMP tunneling, and honeyport connections as they happen.
+- **Traffic Viewer** — Filter and inspect live network traffic by protocol, port, and interface.
+- **Multithreaded Architecture** — Separates packet capture, parsing, and detection into dedicated threads for speed and memory efficiency.
+- **Persistent Logging** — All detections are stored in a local SQL database for filtering, searching, and review.
+
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-Before installing, ensure you have the following:
-* Python 3.10+
+- Python 3.10+
+- [Npcap](https://npcap.com/#download)
+- [Nmap](https://nmap.org/download#windows)
 
 ### Installation
 
 1. **Clone the repository**
-   ```bash
-   git clone [https://github.com/your-username/AmanoWatch.git](https://github.com/your-username/AmanoWatch.git)
-
-2. **Navigate to the Directory**
-   ```bash
+```bash
+   git clone https://github.com/noahcosamano/AmanoWatch.git
    cd AmanoWatch
+```
 
-3. **Install dependencies**
-   ```bash
-   [Your install command, e.g., npm install or pip install -r requirements.txt]
+2. **Install [Npcap](https://npcap.com/#download)** — during installation, check *"Install Npcap in WinPcap API-compatible mode"*.
 
-4. **Run the application**
-   ```bash
-   [Your start command, e.g., npm start]
+3. **Install [Nmap](https://nmap.org/download#windows)** — download and run the Windows installer.
 
-##🛠️ Usage
-...
+4. **Install Python dependencies**
+```bash
+   pip install -r requirements.txt
+```
 
-##🤝 Contributing
-Contributions are what make the open-source community such an amazing place to learn, inspire, and create.
+5. **Run AmanoWatch as Administrator**
+```bash
+   python main.py
+```
 
-1. Fork the Project
+---
 
-2. Create your Feature Branch (git checkout -b feature/AmazingFeature)
+## 🛠️ Usage
 
-3. Commit your Changes (git commit -m 'Add some AmazingFeature')
+> Documentation in progress. More details coming soon.
 
-4. Push to the Branch (git push origin feature/AmazingFeature)
+---
 
+## 🤝 Contributing
+
+Contributions are welcome and appreciated. To get started:
+
+1. Fork the repository
+2. Create a feature branch
+```bash
+   git checkout -b feature/your-feature-name
+```
+3. Commit your changes
+```bash
+   git commit -m "Add your feature description"
+```
+4. Push to your branch
+```bash
+   git push origin feature/your-feature-name
+```
 5. Open a Pull Request
 
-📄 License
-Distributed under the MIT License. See LICENSE for more information.
+---
+
+## 📄 License
+
+Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.
