@@ -1,6 +1,8 @@
 from capture.classes.PyPacket import PyPacket
 from network.block_mac import unblock_mac, block_mac
 from database.edit import add_detection
+from threading import Event
+from queue import Queue
 
 class ArpSpoof:
     def __init__(self, packet_queue, cooldown, alert_callback=None):
@@ -54,7 +56,7 @@ class ArpSpoof:
             dst_port=packet.dst_port, 
             details=None)
         
-def detect_arp_spoof(packet_queue, cooldown, stop_event, cli_ready, alert_callback=None):
+def detect_arp_spoof(packet_queue: Queue, cooldown, stop_event: Event, cli_ready: Event, alert_callback=None):
     detector = ArpSpoof(packet_queue, cooldown, alert_callback=alert_callback)
     
     while not stop_event.is_set() and cli_ready.is_set():

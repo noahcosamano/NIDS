@@ -5,7 +5,8 @@ from network.block_ip import block_ip, unblock_ip
 from network.get_gateway import get_gateway
 from network.get_ip import get_ip
 from utils.geolocate_ip import search_ip
-import queue
+from queue import Queue
+from threading import Event
 
 class HoneyPort:
     def __init__(self, device, packet_queue, alert_callback=None):
@@ -77,7 +78,8 @@ class HoneyPort:
                 f"Reason for alert: {reason}"
             )
         
-def detect_honey_port_connection(device_name, packet_queue, stop_event, cli_ready, alert_callback=None):
+def detect_honey_port_connection(device_name, packet_queue: Queue, stop_event: Event, 
+                                 cli_ready: Event, alert_callback=None):
     detector = HoneyPort(device_name, packet_queue, alert_callback=alert_callback)
     
     while not stop_event.is_set() and cli_ready.is_set():

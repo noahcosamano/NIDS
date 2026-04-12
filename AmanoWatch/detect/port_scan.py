@@ -5,8 +5,9 @@ from network.get_ip import get_ip
 from detect.config import FLAG_TO_NAME
 from database.edit import add_detection
 from collections import deque, defaultdict
+from queue import Queue
+from threading import Event
 import time
-import queue
 import traceback
 
 
@@ -142,7 +143,8 @@ class PortScan:
             )
 
 
-def detect_port_scan(device, packet_queue, interval, quantity, cooldown, stop_event, cli_ready, alert_callback=None):
+def detect_port_scan(device, packet_queue: Queue, interval, quantity, cooldown, 
+                     stop_event: Event, cli_ready: Event, alert_callback=None):
     detector = PortScan(device, packet_queue, interval, quantity, cooldown, alert_callback=alert_callback)
 
     while not stop_event.is_set() and cli_ready.is_set():

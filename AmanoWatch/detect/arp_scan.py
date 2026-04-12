@@ -1,6 +1,7 @@
 from capture.classes.PyPacket import PyPacket
 from database.edit import add_detection
-import queue
+from queue import Queue
+from threading import Event
 import time
 
 class _SourceState:
@@ -138,7 +139,7 @@ class ArpScan:
             details=details,
         )
         
-def detect_arp_scan(packet_queue, stop_event, cli_ready, alert_callback=None):
+def detect_arp_scan(packet_queue: Queue, stop_event: Event, cli_ready: Event, alert_callback=None):
     detector = ArpScan(alert_callback=alert_callback)
     
     while not stop_event.is_set() and cli_ready.is_set():

@@ -3,7 +3,8 @@ from detect.config import DNS_WHITELIST
 from database.edit import add_detection
 import math
 import time
-import queue
+from queue import Queue
+from threading import Event
 from collections import Counter
 
 
@@ -203,7 +204,7 @@ class DnsTunnel:
             f"Recent queries:\n"
         )
         for entry in state.entries[-10:]:
-            p = entry["packet"]
+            p: PyPacket = entry["packet"]
             q_domain = self._parse_dns_name(p.payload) if p.payload else "?"
             details += (
                 f"  {time.ctime(entry['timestamp'])} | "
@@ -233,7 +234,7 @@ class DnsTunnel:
         )
 
 
-def detect_dns_tunnel(packet_queue, stop_event, cli_ready, alert_callback=None):
+def detect_dns_tunnel(packet_queue: Queue, stop_event: Event, cli_ready: Event, alert_callback=None):
     detector = DnsTunnel(alert_callback=alert_callback)
 
     while not stop_event.is_set() and cli_ready.is_set():
