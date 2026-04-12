@@ -59,6 +59,7 @@ class ArpScan:
         self.alert_callback = alert_callback
         self.activity = {} # src_ip -> _SourceState
         self.last_alert = {} # src_ip -> timestamp
+        self.last_severity = {}
         
     def process_packet(self, packet: PyPacket):
         if not packet.src_ip or not packet.dst_ip:
@@ -72,7 +73,8 @@ class ArpScan:
         state.clean(self.interval)
         state.calculate_risk()
         
-        severity = None
+        severity_rank = {"medium": 0, "high": 1, "critical": 2}
+        
         if state.risk >= 10.0:
             severity = "critical"
         elif state.risk >= 7.5:
@@ -83,10 +85,18 @@ class ArpScan:
             return
         
         now = time.time()
-        if now - self.last_alert.get(packet.src_ip, 0) < self.cooldown:
-            return
+        last_sev = self.last_severity.get(packet.src_ip)
+        since_last = now - self.last_alert.get(packet.src_ip, 0)
+
+        # Allow alert if: severity escalated, OR cooldown has expired
+        if last_sev is not None:
+            escalated = severity_rank[severity] > severity_rank[last_sev]
+            if not escalated and since_last < self.cooldown:
+                return
+
         self.last_alert[packet.src_ip] = now
-        
+        self.last_severity[packet.src_ip] = severity
+
         self.detected(severity, packet, state)
         
     def detected(self, severity: str, packet: PyPacket, state: _SourceState):
@@ -112,7 +122,7 @@ class ArpScan:
             self.alert_callback(
                 severity,
                 "ARP Scanning",
-                f"{len(state.unique_ips)}+ unique ARP requests sent in {self.interval}s"
+                f"{state.ip} sent {len(state.unique_ips)}+ unique ARP requests sent in {self.interval}s"
             )
 
         add_detection(
