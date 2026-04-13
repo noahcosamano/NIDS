@@ -9,6 +9,9 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.spec
+/dist
+/build
 
 # Virtual environments
 .venv/

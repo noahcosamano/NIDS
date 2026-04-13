@@ -47,7 +47,7 @@ def main():
     dns_queue = queue.Queue()
     icmp_tunnel_queue = queue.Queue()
     honey_port_queue = queue.Queue()
-    brute_force_thread = queue.Queue()
+    brute_force_queue = queue.Queue()
     
     # All threads are set to daemon=True to end when program ends
     # All thread names are for debugging
@@ -67,7 +67,7 @@ def main():
         target=begin_capture,
         args=(
             device_path, arp_spoof_queue, arp_scan_queue, dns_queue, icmp_tunnel_queue, honey_port_queue, 
-            slow_scan_queue, fast_scan_queue, icmp_sweep_queue, cli_queue, stop_event, cli_ready_event
+            slow_scan_queue, fast_scan_queue, icmp_sweep_queue, brute_force_queue, cli_queue, stop_event, cli_ready_event
         ),
         name="CAPTURE",
         daemon=True
@@ -110,7 +110,7 @@ def main():
     
     arp_scan_thread = threading.Thread(
         target=detect_arp_scan,
-        args=(arp_scan_queue, stop_event, cli_ready_event),
+        args=(device_name, arp_scan_queue, stop_event, cli_ready_event),
         name="ARP SCAN",
         daemon=True
     )
@@ -140,7 +140,7 @@ def main():
     
     brute_force_thread = threading.Thread(
         target=detect_brute_force,
-        args=(device_name, stop_event, cli_ready_event),
+        args=(brute_force_queue, stop_event, cli_ready_event),
         name="BRUTE FORCE",
         daemon=True
     )

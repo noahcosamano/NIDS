@@ -1,11 +1,14 @@
 import sqlite3
 import os
+from database.paths import get_db_path
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "amanowatch.db")
 
 
 def query(n=None, ip=None, mac=None, port=None, severity=None,
           detector=None, since=None, date=None):
+    db_path = get_db_path()
+    print(db_path)
     """
     Search detections with optional filters. Any filter left as None
     is treated as 'any value' and not included in the query.
@@ -63,7 +66,7 @@ def query(n=None, ip=None, mac=None, port=None, severity=None,
         sql += " LIMIT ?"
         params.append(n)
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(get_db_path())
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute(sql, params)

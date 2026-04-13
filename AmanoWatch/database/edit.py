@@ -1,4 +1,5 @@
 import sqlite3
+from database.paths import get_db_path
 
 DB_PATH = "AmanoWatch/database/amanowatch.db"
 
@@ -12,7 +13,7 @@ def add_detection(detector_type, severity, summary,
     are required. The timestamp column is filled in automatically by
     SQLite via the DEFAULT clause — never pass it.
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -45,7 +46,7 @@ def add_detection(detector_type, severity, summary,
     conn.close()
     
 def purge_low_severity():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(get_db_path())
     try:
         cur = conn.execute(
             "DELETE FROM detections WHERE LOWER(severity) IN (?, ?)",
