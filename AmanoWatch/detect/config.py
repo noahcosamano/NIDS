@@ -38,7 +38,7 @@ HONEY_PORTS = {
     5986:  {"protocol": "WinRM HTTPS",                          "reason": "Encrypted WinRM, same risk profile as 5985"},
 
     # Remote Access
-    22:    {"protocol": "SSH (Secure Shell)",                    "reason": "Constant brute-force target — only honeypot if SSH is on a different port"},
+    22:    {"protocol": "SSH (Secure Shell)",                    "reason": "Constant brute-force target — only honeyport if SSH is on a different port"},
     3389:  {"protocol": "RDP (Remote Desktop Protocol)",         "reason": "Top ransomware entry point, massively scanned and brute-forced"},
     5900:  {"protocol": "VNC (Virtual Network Computing)",       "reason": "Often misconfigured with weak/no auth, high value attacker target"},
     5901:  {"protocol": "VNC Display :1",                        "reason": "Secondary VNC display port, scanned alongside 5900"},

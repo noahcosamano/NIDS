@@ -7,36 +7,41 @@ from network.get_ip import get_ip
 from utils.geolocate_ip import search_ip
 from queue import Queue
 from threading import Event
+import time
 
 class HoneyPort:
-    def __init__(self, device, packet_queue, alert_callback=None):
+    def __init__(self, device, packet_queue, cooldown=30, alert_callback=None):
         self.packet_queue = packet_queue
         self.alert_callback = alert_callback
+        self.cooldown = cooldown
         self.gateway = get_gateway()
         self.host_ip = get_ip(device)
+        self.last_alert = {}
         
         if self.host_ip:
             self.host_ip = self.host_ip.replace("(Preferred)","").strip()
         
     def _process_packet(self, packet: PyPacket):
-        now = packet.timestamp
-        dst_port = packet.dst_port
-        src_ip = packet.src_ip
-        dst_ip = packet.dst_ip
-        
-        if not src_ip or not dst_port or not dst_ip:
+        if not packet.src_ip or not packet.dst_port or not packet.dst_ip:
             return
         
-        if dst_ip != self.host_ip:
+        if packet.dst_ip != self.host_ip:
             return
         
-        if src_ip == self.host_ip or src_ip == self.gateway or src_ip.startswith("127."):
+        if packet.src_ip == self.host_ip or packet.src_ip == self.gateway or packet.src_ip.startswith("127."):
             return
         
-        protocol, reason = self.check_port(dst_port)
-        
-        if protocol and reason:
-            self.detect(packet, protocol, reason)
+        protocol, reason = self.check_port(packet.dst_port)
+        if not protocol or not reason:
+            return
+
+        now = time.time()
+        since_last = now - self.last_alert.get(packet.src_ip, 0)
+        if since_last < self.cooldown:
+            return
+
+        self.last_alert[packet.src_ip] = now  # use now, not packet.timestamp
+        self.detect(packet, protocol, reason)
         
     def check_port(self, dst_port):
         #print(f"DEBUG: Checking port {dst_port}")

@@ -123,7 +123,7 @@ class ArpScan:
             self.alert_callback(
                 severity,
                 "ARP Scanning",
-                f"{state.ip} sent {len(state.unique_ips)}+ unique ARP requests sent in {self.interval}s"
+                summary + "\n" + details
             )
 
         add_detection(

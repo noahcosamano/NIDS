@@ -119,8 +119,7 @@ class BruteForce:
             self.alert_callback(
                 severity,
                 "Brute Force",
-                f"{state.ip} made {len(state.entries)}+ connections to" + 
-                f" {len(state.targeted_services)} sign-on services in {self.interval}s"
+                summary + "\n" + details
             )
             
         add_detection(
